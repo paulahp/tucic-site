@@ -305,6 +305,29 @@ select.finput{cursor:pointer;}
   .cal-day{min-height:50px;}
   .cal-event{display:none;}
 }
+
+/* ===== MODO EDIÇÃO ADMIN ===== */
+.edit-fab{position:fixed;bottom:24px;right:24px;z-index:500;display:none;flex-direction:column;gap:8px;align-items:flex-end;}
+.edit-fab.visible{display:flex;}
+.fab-btn{display:flex;align-items:center;gap:8px;padding:10px 18px;border-radius:30px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.15);transition:all .2s;}
+.fab-edit{background:var(--azul);color:#fff;}
+.fab-edit:hover{background:var(--azul-l);transform:translateY(-1px);}
+.fab-save{background:#059669;color:#fff;}
+.fab-save:hover{background:#047857;transform:translateY(-1px);}
+.fab-cancel{background:#fff;color:var(--muted);border:1px solid var(--borda)!important;}
+.fab-cancel:hover{background:var(--bg);}
+.editing-mode .rc{position:relative;border:1.5px dashed #93C5FD!important;cursor:text;}
+.editing-mode .rc:hover{border-color:var(--azul)!important;box-shadow:0 0 0 3px rgba(19,50,155,.1);}
+.editing-mode .rc::before{content:'Clique para editar';position:absolute;top:-20px;left:0;font-size:9px;color:var(--azul);font-weight:700;opacity:0;transition:opacity .2s;letter-spacing:.5px;text-transform:uppercase;}
+.editing-mode .rc:hover::before{opacity:1;}
+.editing-mode .ph{outline:2px dashed #93C5FD;border-radius:4px;padding:2px 6px;cursor:text;}
+.editing-mode .ps{outline:1px dashed #C7D2FE;border-radius:4px;padding:2px 6px;cursor:text;}
+.editing-mode .gi{border:1.5px dashed #93C5FD!important;cursor:text;}
+.edit-toolbar-inline{display:none;position:sticky;top:60px;z-index:200;background:var(--surface);border:1px solid var(--borda);border-radius:10px;padding:8px 12px;margin-bottom:14px;flex-wrap:wrap;gap:4px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.edit-toolbar-inline.show{display:flex;}
+.edit-notice{background:var(--azul);color:#fff;border-radius:10px;padding:10px 16px;margin-bottom:14px;font-size:13px;font-weight:600;display:none;align-items:center;gap:8px;}
+.edit-notice.show{display:flex;}
+
 </style>
 </head>
 <body>
@@ -337,7 +360,7 @@ select.finput{cursor:pointer;}
       <input class="finput" type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
       <button class="btn-primary" onclick="doLogin()">Acessar o Portal</button>
       <div class="form-switch">Não tem acesso? <span class="alink" onclick="showView('v-solicitar')">Solicite aqui</span></div>
-      <div class="hint">admin@tucic.com / tucic2024 · membro@tucic.com / tucic2024</div>
+      <div class="hint"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="244540494d4a645051474d470a474b49">[email&#160;protected]</a> / tucic2024 · <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fc9199919e8e93bc88899f959fd29f9391">[email&#160;protected]</a> / tucic2024</div>
     </div>
   </div>
 </div>
@@ -426,6 +449,28 @@ select.finput{cursor:pointer;}
   </nav>
 
   <main class="main">
+
+<div class="edit-toolbar-inline" id="edit-toolbar-inline">
+  <span style="font-size:11px;font-weight:700;color:var(--azul);margin-right:6px;">EDITAR:</span>
+  <button class="tool-btn" onclick="fmtI('bold')"><b>N</b></button>
+  <button class="tool-btn" onclick="fmtI('italic')"><i>I</i></button>
+  <button class="tool-btn" onclick="fmtI('underline')"><u>S</u></button>
+  <div class="tool-sep" style="width:1px;background:var(--borda);margin:0 4px;height:20px;"></div>
+  <button class="tool-btn" onclick="fmtBI('h1')">H1</button>
+  <button class="tool-btn" onclick="fmtBI('h2')">H2</button>
+  <button class="tool-btn" onclick="fmtBI('h3')">H3</button>
+  <button class="tool-btn" onclick="fmtBI('p')">¶</button>
+  <div class="tool-sep" style="width:1px;background:var(--borda);margin:0 4px;height:20px;"></div>
+  <button class="tool-btn" onclick="fmtI('insertUnorderedList')">• Lista</button>
+  <button class="tool-btn" onclick="fmtI('insertOrderedList')">1. Lista</button>
+  <div class="tool-sep" style="width:1px;background:var(--borda);margin:0 4px;height:20px;"></div>
+  <button class="tool-btn" onclick="fmtI('removeFormat')" style="color:var(--danger);">✕ Limpar</button>
+</div>
+<div class="edit-notice" id="edit-notice">
+  <span>✏️</span>
+  <span>Modo edição ativo — clique em qualquer texto para editar. Clique em <strong>Salvar alterações</strong> quando terminar.</span>
+</div>
+
 
     <!-- INÍCIO -->
     <div id="sec-inicio" class="sec active">
@@ -830,9 +875,9 @@ select.finput{cursor:pointer;}
         <table class="at">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Relação</th><th>Status</th><th>Ação</th></tr></thead>
           <tbody>
-            <tr><td>Maria das Dores</td><td>maria@email.com</td><td>Filha de santo</td><td class="sp">⏳ Pendente</td><td><button class="btn-ap" onclick="aprovar(this)">Aprovar</button><button class="btn-rj" onclick="recusar(this)">Recusar</button></td></tr>
-            <tr><td>João Pereira</td><td>joao@email.com</td><td>Médium em dev.</td><td class="sp">⏳ Pendente</td><td><button class="btn-ap" onclick="aprovar(this)">Aprovar</button><button class="btn-rj" onclick="recusar(this)">Recusar</button></td></tr>
-            <tr><td>Ana Lima</td><td>ana@email.com</td><td>Iaô</td><td class="sa">✓ Ativo</td><td>—</td></tr>
+            <tr><td>Maria das Dores</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c5a8a4b7aca485a0a8a4aca9eba6aaa8">[email&#160;protected]</a></td><td>Filha de santo</td><td class="sp">⏳ Pendente</td><td><button class="btn-ap" onclick="aprovar(this)">Aprovar</button><button class="btn-rj" onclick="recusar(this)">Recusar</button></td></tr>
+            <tr><td>João Pereira</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d8b2b7b9b798bdb5b9b1b4f6bbb7b5">[email&#160;protected]</a></td><td>Médium em dev.</td><td class="sp">⏳ Pendente</td><td><button class="btn-ap" onclick="aprovar(this)">Aprovar</button><button class="btn-rj" onclick="recusar(this)">Recusar</button></td></tr>
+            <tr><td>Ana Lima</td><td><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb9a959abb9e969a9297d5989496">[email&#160;protected]</a></td><td>Iaô</td><td class="sa">✓ Ativo</td><td>—</td></tr>
           </tbody>
         </table>
       </div>
@@ -856,7 +901,7 @@ select.finput{cursor:pointer;}
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 // PDF.js worker
 if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -924,6 +969,7 @@ function doLogin(){
     if(u.admin)document.getElementById('adm-nav').style.display='block';
     showView('v-dash');
     buildAll();
+    if(u.admin) { isAdmin=true; mostrarFAB(); }
   }else{err.textContent='E-mail ou senha incorretos.';err.style.display='block';}
 }
 function logout(){
@@ -932,6 +978,8 @@ function logout(){
   document.getElementById('adm-nav').style.display='none';
   document.getElementById('email').value='';
   document.getElementById('senha').value='';
+  isAdmin=false;
+  document.getElementById('edit-fab').classList.remove('visible');
   showView('v-login');
 }
 document.addEventListener('keydown',function(e){if(e.key==='Enter'){var vl=document.getElementById('v-login');if(vl&&vl.style.display==='flex')doLogin();}});
@@ -1197,20 +1245,4 @@ function criarPaginaDoPDF(nome){
   var txt=document.getElementById('pdf-text');if(!txt)return;
   var conteudo=txt.innerText||txt.textContent;
   paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;color:#374151;">'+conteudo.replace(/</g,'&lt;')+'</pre>',data:new Date().toLocaleDateString('pt-BR')});
-  adicionarAoMenu(nome,'📄',paginas.length-1);
-  renderPaginas();
-  document.getElementById('pdf-feedback').textContent='✓ Página "'+nome+'" criada! Acesse em "Criar Páginas" para editar.';
-  document.getElementById('pdf-feedback').style.display='block';
-}
-
-function copiarTexto(){
-  var txt=document.getElementById('pdf-text');if(!txt)return;
-  navigator.clipboard.writeText(txt.innerText||txt.textContent).then(function(){
-    document.getElementById('pdf-feedback').textContent='✓ Texto copiado!';
-    document.getElementById('pdf-feedback').style.display='block';
-    setTimeout(function(){document.getElementById('pdf-feedback').style.display='none';},2000);
-  });
-}
-</script>
-</body>
-</html>
+  adiciona
