@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TUCIC — Portal dos Membros</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,400;1,400&family=Lato:wght@300;400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --azul:#13329b;--azul-d:#0e2578;--azul-l:#1a3eb8;
+  --ouro:#eece3b;--ouro-d:#c9a820;--ouro-p:#fdf3a0;
+  --bg:#080f2e;--borda:rgba(238,206,59,.18);
+  --card:rgba(19,50,155,.1);--card-borda:rgba(238,206,59,.13);
+  --texto:#e8e8f0;--muted:rgba(180,185,220,.55);
+}
+html,body{height:100%;font-family:'Lato',sans-serif;background:var(--bg);color:var(--texto);}
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(1px 1px at 8% 12%,rgba(238,206,59,.55) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 48% 7%,rgba(238,206,59,.45) 0%,transparent 100%),radial-gradient(1px 1px at 73% 22%,rgba(238,206,59,.35) 0%,transparent 100%),radial-gradient(1px 1px at 91% 52%,rgba(238,206,59,.4) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 15% 90%,rgba(238,206,59,.45) 0%,transparent 100%),radial-gradient(1px 1px at 58% 85%,rgba(238,206,59,.3) 0%,transparent 100%),radial-gradient(1px 1px at 33% 70%,rgba(238,206,59,.22) 0%,transparent 100%),radial-gradient(1px 1px at 22% 38%,rgba(255,255,255,.12) 0%,transparent 100%);}
+.glow{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 50% 0%,rgba(19,50,155,.4) 0%,transparent 65%);}
+
+/* ===== HEADER ===== */
+header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:13px 22px;border-bottom:1px solid var(--borda);background:rgba(8,15,46,.95);backdrop-filter:blur(8px);}
+.logo{display:flex;align-items:center;gap:11px;}
+.logo-badge{width:44px;height:44px;border-radius:50%;border:2px solid var(--ouro);background:rgba(238,206,59,.1);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:14px;color:var(--ouro);font-weight:600;flex-shrink:0;}
+.logo-name{font-family:'Cinzel',serif;font-size:14px;color:var(--ouro);letter-spacing:2px;}
+.logo-sub{font-size:8px;color:rgba(238,206,59,.38);letter-spacing:.4px;margin-top:2px;line-height:1.3;}
+#header-user{font-size:11px;color:rgba(238,206,59,.5);}
+.btn-sair{padding:6px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid rgba(238,206,59,.3);color:var(--ouro-d);background:transparent;font-family:'Lato',sans-serif;transition:all .2s;display:none;}
+.btn-sair:hover{background:rgba(238,206,59,.08);}
+
+/* ===== VIEWS ===== */
+.view{display:none;position:relative;z-index:5;}
+.view.active{display:block;}
+
+/* ===== LOGIN ===== */
+#v-login{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 71px);padding:40px 20px;}
+.login-box{width:100%;max-width:380px;}
+.login-eye{font-size:9px;letter-spacing:3px;color:rgba(238,206,59,.4);text-transform:uppercase;text-align:center;margin-bottom:10px;}
+.login-title{font-family:'Cinzel',serif;font-size:26px;color:var(--ouro);text-align:center;letter-spacing:2px;margin-bottom:4px;}
+.login-sub{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:rgba(200,180,80,.6);text-align:center;margin-bottom:6px;}
+.dg{width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--ouro),transparent);margin:0 auto 22px;}
+.card{background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:28px;}
+.flabel{font-size:9px;letter-spacing:1px;color:rgba(238,206,59,.5);display:block;margin-bottom:5px;text-transform:uppercase;}
+.finput{width:100%;padding:10px 14px;background:rgba(19,50,155,.18);border:1px solid rgba(238,206,59,.2);border-radius:8px;color:var(--texto);font-size:13px;font-family:'Lato',sans-serif;outline:none;margin-bottom:14px;transition:border-color .2s;}
+.finput:focus{border-color:rgba(238,206,59,.52);}
+textarea.finput{resize:vertical;min-height:80px;}
+.btn-full{width:100%;padding:12px;background:var(--ouro);color:var(--azul-d);border:none;border-radius:8px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;cursor:pointer;font-weight:700;margin-top:2px;transition:background .2s;}
+.btn-full:hover{background:var(--ouro-p);}
+.form-switch{text-align:center;margin-top:13px;font-size:12px;color:var(--muted);}
+.alink{color:var(--ouro-d);cursor:pointer;text-decoration:underline;}
+.hint{text-align:center;margin-top:8px;font-size:9px;color:rgba(140,140,160,.28);}
+.err-box{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#F87171;border-radius:7px;padding:9px 12px;font-size:12px;margin-bottom:12px;text-align:center;display:none;}
+.ok-box{background:rgba(19,50,155,.2);border:1px solid rgba(238,206,59,.22);color:rgba(238,206,59,.8);border-radius:8px;padding:11px;margin-top:12px;font-size:12px;text-align:center;line-height:1.6;}
+
+/* ===== DASHBOARD ===== */
+#v-dash{min-height:calc(100vh - 71px);}
+.dash-layout{display:flex;min-height:calc(100vh - 71px);}
+
+/* sidebar */
+.sidebar{width:210px;flex-shrink:0;border-right:1px solid var(--borda);background:rgba(8,15,46,.5);position:sticky;top:71px;height:calc(100vh - 71px);overflow-y:auto;padding:16px 0;}
+.sidebar::-webkit-scrollbar{width:3px;}.sidebar::-webkit-scrollbar-thumb{background:rgba(238,206,59,.15);}
+.sb-user{padding:0 13px 14px;border-bottom:1px solid rgba(238,206,59,.1);margin-bottom:12px;}
+.sb-av{width:42px;height:42px;border-radius:50%;border:2px solid var(--ouro);background:rgba(238,206,59,.12);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:13px;color:var(--ouro);margin-bottom:7px;}
+.sb-name{font-size:12px;font-weight:700;color:var(--texto);}
+.sb-role{font-size:9px;color:rgba(238,206,59,.4);letter-spacing:.8px;}
+.nav-sec{padding:0 5px;margin-bottom:5px;}
+.nav-sec-title{font-size:8px;letter-spacing:1.5px;color:rgba(238,206,59,.24);text-transform:uppercase;padding:0 8px;margin-bottom:3px;}
+.ni{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:7px;cursor:pointer;font-size:11.5px;color:var(--muted);transition:all .15s;}
+.ni:hover{background:rgba(238,206,59,.07);color:rgba(238,206,59,.8);}
+.ni.active{background:rgba(19,50,155,.35);color:var(--ouro);border-left:2px solid var(--ouro);padding-left:7px;}
+.ni-ic{font-size:12px;width:15px;text-align:center;flex-shrink:0;}
+.sb-logout{font-size:10px;color:rgba(170,170,200,.28);cursor:pointer;padding:6px 9px;margin-top:8px;display:block;}
+.sb-logout:hover{color:rgba(220,80,80,.55);}
+
+/* main */
+.main{flex:1;padding:24px;overflow-y:auto;}
+.sec{display:none;}.sec.active{display:block;}
+.ph{font-family:'Cinzel',serif;font-size:19px;color:var(--ouro);margin-bottom:3px;}
+.ps{font-size:11px;color:rgba(160,165,200,.4);margin-bottom:20px;}
+
+/* componentes */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;}
+.ccard{background:var(--card);border:1px solid var(--card-borda);border-radius:10px;padding:15px;cursor:pointer;transition:all .2s;}
+.ccard:hover{border-color:rgba(238,206,59,.42);background:rgba(238,206,59,.05);transform:translateY(-2px);}
+.ccard .ci{font-size:22px;margin-bottom:7px;}.ccard .ct{font-size:12px;font-weight:700;color:var(--texto);margin-bottom:3px;}.ccard .cd{font-size:10px;color:var(--muted);line-height:1.4;}
+
+.rc{background:var(--card);border:1px solid var(--card-borda);border-radius:10px;padding:16px;margin-bottom:10px;}
+.rt{font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ouro-d);margin-bottom:4px;}
+.rm{font-size:9px;color:rgba(238,206,59,.32);letter-spacing:.9px;text-transform:uppercase;margin-bottom:7px;}
+.rb{font-size:12.5px;color:rgba(200,205,230,.68);line-height:1.78;}
+.badge{display:inline-block;font-size:9px;padding:2px 8px;border-radius:20px;border:1px solid rgba(238,206,59,.2);color:rgba(238,206,59,.58);margin:0 3px 4px 0;}
+
+.av{border-radius:9px;padding:13px;margin-bottom:9px;}
+.av.gold{background:rgba(238,206,59,.07);border:1px solid rgba(238,206,59,.2);color:rgba(238,206,59,.8);}
+.av.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.22);color:#FBBF24;}
+.av.green{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.22);color:#34D399;}
+.av.blue{background:rgba(19,50,155,.25);border:1px solid rgba(19,50,155,.5);color:#93C5FD;}
+.av .avt{font-size:13px;font-weight:700;margin-bottom:3px;}.av .avb{font-size:12px;line-height:1.7;color:rgba(200,205,230,.7);}
+.avtag{display:inline-block;font-size:9px;padding:2px 8px;border-radius:10px;margin-bottom:6px;}
+
+.tabs{display:flex;gap:5px;margin-bottom:15px;flex-wrap:wrap;}
+.tab{padding:5px 13px;border-radius:20px;font-size:10.5px;cursor:pointer;border:1px solid rgba(238,206,59,.14);color:var(--muted);background:transparent;transition:all .2s;}
+.tab.active{border-color:var(--ouro);color:var(--ouro);background:rgba(238,206,59,.07);}
+.tc{display:none;}.tc.active{display:block;}
+
+.li{display:flex;align-items:flex-start;gap:9px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.li:last-child{border-bottom:none;}
+.ld{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;border:1px solid rgba(255,255,255,.12);}
+.lt{font-size:12.5px;color:rgba(200,205,230,.68);line-height:1.6;}
+
+.gi{border-left:3px solid var(--ouro);padding:10px 14px;margin-bottom:7px;background:var(--card);border-radius:0 8px 8px 0;}
+.gn2{font-size:9px;color:rgba(238,206,59,.34);letter-spacing:.8px;margin-bottom:1px;}
+.gt{font-size:12.5px;font-weight:700;color:var(--ouro-d);}
+.gd{font-size:11.5px;color:rgba(185,190,220,.55);margin-top:3px;line-height:1.6;}
+
+.og{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:7px;}
+.oc{background:var(--card);border:1px solid var(--card-borda);border-radius:9px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;}
+.oc:hover{border-color:rgba(238,206,59,.4);background:rgba(238,206,59,.04);}
+.odot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:3px;vertical-align:middle;border:1px solid rgba(255,255,255,.14);}
+.on{font-family:'Cinzel',serif;font-size:10.5px;color:var(--ouro-d);margin-bottom:2px;}
+.os2{font-size:9px;color:var(--muted);font-style:italic;line-height:1.35;}
+
+.ec{background:var(--card);border:1px solid var(--card-borda);border-radius:9px;padding:13px;margin-bottom:8px;}
+.en{font-size:13px;font-weight:700;color:var(--ouro-d);margin-bottom:2px;}
+.eca{font-size:9px;color:rgba(238,206,59,.32);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px;}
+.ebo{font-size:11.5px;color:var(--muted);line-height:1.65;}
+
+.mb{background:rgba(238,206,59,.07);border:1px solid rgba(238,206,59,.18);border-radius:10px;padding:17px;margin-bottom:10px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.mv{font-family:'Cinzel',serif;font-size:26px;color:var(--ouro);}
+.ml{font-size:9.5px;color:rgba(238,206,59,.43);letter-spacing:.7px;}
+.sr{display:flex;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.sn{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:50%;background:rgba(238,206,59,.18);color:var(--ouro);font-size:10px;font-weight:700;margin-right:9px;flex-shrink:0;}
+.st{font-size:12px;color:rgba(200,205,230,.66);line-height:1.6;}
+.pixb{padding:10px;background:rgba(238,206,59,.05);border-radius:6px;margin-top:9px;font-size:11px;color:rgba(200,205,230,.6);border:1px solid rgba(238,206,59,.1);}
+
+.gc{background:var(--card);border:1px solid var(--card-borda);border-radius:10px;padding:16px;margin-bottom:9px;}
+.gtag{display:inline-block;font-size:9px;padding:2px 9px;border-radius:20px;margin-bottom:8px;}
+
+.at{width:100%;border-collapse:collapse;font-size:11.5px;}
+.at th{text-align:left;padding:7px 10px;font-size:8px;letter-spacing:.9px;color:rgba(238,206,59,.28);border-bottom:1px solid rgba(238,206,59,.1);}
+.at td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);color:rgba(200,205,230,.64);}
+.sp{color:#FBBF24;}.sa{color:#34D399;}
+.ap2{font-size:9px;padding:3px 9px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:#34D399;border-radius:20px;cursor:pointer;}
+.rj2{font-size:9px;padding:3px 9px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.18);color:#F87171;border-radius:20px;cursor:pointer;margin-left:4px;}
+
+@media(max-width:700px){
+  .sidebar{width:100%;position:relative;top:0;height:auto;border-right:none;border-bottom:1px solid var(--borda);overflow-x:auto;overflow-y:hidden;padding:8px 0;white-space:nowrap;}
+  .sb-user,.nav-sec-title,.sb-logout{display:none;}
+  .nav-sec{display:inline-flex;padding:0;}
+  .ni{padding:5px 10px;border-radius:20px;}
+  .ni.active{border-left:none;padding-left:10px;}
+  .dash-layout{flex-direction:column;}
+  .main{padding:16px;}
+}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="glow"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-badge">T</div>
+    <div>
+      <div class="logo-name">TUCIC</div>
+      <div class="logo-sub">Tenda de Umbanda Cabocla Inaê das Cachoeiras</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="header-user"></span>
+    <button class="btn-sair" id="btn-sair" onclick="logout()">Sair</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="v-login" class="view active">
+  <div class="login-box">
+    <div class="login-eye">Portal dos Membros</div>
+    <div class="login-title">TUCIC</div>
+    <div class="login-sub">Tenda de Umbanda Cabocla Inaê das Cachoeiras</div>
+    <div class="dg"></div>
+    <div class="card">
+      <div class="err-box" id="err"></div>
+      <label class="flabel">E-mail</label>
+      <input class="finput" type="email" id="email" placeholder="seu@email.com" autocomplete="email">
+      <label class="flabel">Senha</label>
+      <input class="finput" type="password" id="senha" placeholder="••••••••" autocomplete="current-password">
+      <button class="btn-full" onclick="doLogin()">Acessar o Portal</button>
+      <div class="form-switch">Não tem acesso? <span class="alink" onclick="show('v-solicitar')">Solicite aqui</span></div>
+      <div class="hint">admin@tucic.com / tucic2024 &nbsp;·&nbsp; membro@tucic.com / tucic2024</div>
+    </div>
+  </div>
+</div>
+
+<!-- SOLICITAR -->
+<div id="v-solicitar" class="view" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 71px);padding:40px 20px;">
+  <div style="width:100%;max-width:380px;">
+    <div class="login-eye">Solicitar Acesso</div>
+    <div class="login-title">TUCIC</div>
+    <div class="dg"></div>
+    <div class="card" id="sol-form">
+      <label class="flabel">Nome completo</label>
+      <input class="finput" type="text" placeholder="Como você é conhecido(a) no terreiro">
+      <label class="flabel">E-mail</label>
+      <input class="finput" type="email" placeholder="seu@email.com">
+      <label class="flabel">Relação com o TUCIC</label>
+      <input class="finput" type="text" placeholder="Ex: filho(a) de santo, médium em desenvolvimento...">
+      <label class="flabel">Mensagem (opcional)</label>
+      <textarea class="finput" placeholder="Sua caminhada espiritual..."></textarea>
+      <button class="btn-full" onclick="document.getElementById('sol-form').style.display='none';document.getElementById('sol-ok').style.display='block';">Enviar Solicitação</button>
+      <div class="form-switch"><span class="alink" onclick="show('v-login')">← Voltar ao login</span></div>
+    </div>
+    <div id="sol-ok" style="display:none;" class="card" style="text-align:center;">
+      <div style="font-size:36px;text-align:center;margin-bottom:12px;">🙏</div>
+      <div style="font-family:'Cinzel',serif;font-size:16px;color:var(--ouro);text-align:center;margin-bottom:7px;">Solicitação Enviada!</div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;">Você será notificado por e-mail quando aprovado(a) pela Mãe Rosi de Oxum.</div>
+      <div class="ok-box">Axé! Aguarde com fé e paciência. 🌿</div>
+      <button class="btn-full" style="margin-top:14px;" onclick="show('v-login')">Voltar ao login</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="v-dash" class="view">
+<div class="dash-layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">M</div>
+      <div class="sb-name" id="sb-name">Membro</div>
+      <div class="sb-role" id="sb-role">MEMBRO</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-sec-title">Principal</div>
+      <div class="ni active" onclick="sec('inicio',this)"><span class="ni-ic">🏠</span>Início</div>
+      <div class="ni" onclick="sec('avisos',this)"><span class="ni-ic">📢</span>Avisos</div>
+      <div class="ni" onclick="sec('calendario',this)"><span class="ni-ic">🗓️</span>Calendário</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-sec-title">Manual do Médium</div>
+      <div class="ni" onclick="sec('bemestar',this)"><span class="ni-ic">📋</span>Bem-vindo(a)</div>
+      <div class="ni" onclick="sec('preceitos',this)"><span class="ni-ic">🕊️</span>Preceitos</div>
+      <div class="ni" onclick="sec('mensalidade',this)"><span class="ni-ic">💰</span>Mensalidade</div>
+      <div class="ni" onclick="sec('vela',this)"><span class="ni-ic">🕯️</span>Consagrar Vela</div>
+      <div class="ni" onclick="sec('guias',this)"><span class="ni-ic">📿</span>Guias</div>
+      <div class="ni" onclick="sec('obrigacoes',this)"><span class="ni-ic">📌</span>Obrigações</div>
+      <div class="ni" onclick="sec('hierarquia',this)"><span class="ni-ic">🏛️</span>Hierarquia</div>
+      <div class="ni" onclick="sec('postura',this)"><span class="ni-ic">🤝</span>Postura</div>
+      <div class="ni" onclick="sec('cursos',this)"><span class="ni-ic">🎓</span>Cursos</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-sec-title">Saberes</div>
+      <div class="ni" onclick="sec('banhos',this)"><span class="ni-ic">🌿</span>Banhos de Ervas</div>
+      <div class="ni" onclick="sec('defumacao',this)"><span class="ni-ic">🌫️</span>Defumação</div>
+      <div class="ni" onclick="sec('batefolhas',this)"><span class="ni-ic">🍃</span>Bate-Folhas</div>
+      <div class="ni" onclick="sec('chas',this)"><span class="ni-ic">🫖</span>Chás e Pós</div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-sec-title">Tradição</div>
+      <div class="ni" onclick="sec('orixas',this)"><span class="ni-ic">✨</span>Orixás</div>
+      <div class="ni" onclick="sec('giras',this)"><span class="ni-ic">🌀</span>Giras</div>
+      <div class="ni" onclick="sec('linhas',this)"><span class="ni-ic">〰️</span>Linhas</div>
+      <div class="ni" onclick="sec('historia',this)"><span class="ni-ic">📖</span>História</div>
+    </div>
+    <div class="nav-sec" id="adm-nav" style="display:none;">
+      <div class="nav-sec-title">Administração</div>
+      <div class="ni" onclick="sec('admin',this)"><span class="ni-ic">👤</span>Membros</div>
+    </div>
+    <span class="sb-logout" onclick="logout()">← Sair do portal</span>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- INÍCIO -->
+    <div id="sec-inicio" class="sec active">
+      <div class="ph">Bem-vindo(a) ao Portal</div>
+      <div class="ps">Saravá! Axé, força e luz na sua caminhada. 🌿</div>
+      <div class="grid">
+        <div class="ccard" onclick="sec('bemestar',null)"><div class="ci">📋</div><div class="ct">Manual do Médium</div><div class="cd">Orientações para novos médiuns</div></div>
+        <div class="ccard" onclick="sec('preceitos',null)"><div class="ci">🕊️</div><div class="ct">Preceitos</div><div class="cd">O que observar antes das giras</div></div>
+        <div class="ccard" onclick="sec('banhos',null)"><div class="ci">🌿</div><div class="ct">Banhos de Ervas</div><div class="cd">Preparo, ervas e cuidados</div></div>
+        <div class="ccard" onclick="sec('guias',null)"><div class="ci">📿</div><div class="ct">Guias</div><div class="cd">Tipos, uso e fundamentos</div></div>
+        <div class="ccard" onclick="sec('giras',null)"><div class="ci">🌀</div><div class="ct">Giras</div><div class="cd">As 10 giras e seus fundamentos</div></div>
+        <div class="ccard" onclick="sec('orixas',null)"><div class="ci">✨</div><div class="ct">Orixás</div><div class="cd">Saudações e cores vibratórias</div></div>
+        <div class="ccard" onclick="sec('mensalidade',null)"><div class="ci">💰</div><div class="ct">Mensalidade</div><div class="cd">Valores e formas de pagamento</div></div>
+        <div class="ccard" onclick="sec('historia',null)"><div class="ci">📖</div><div class="ct">História do TUCIC</div><div class="cd">Mãe Rosi e a fundação do terreiro</div></div>
+      </div>
+    </div>
+
+    <!-- BEM-VINDO -->
+    <div id="sec-bemestar" class="sec">
+      <div class="ph">Seja bem-vindo(a) ao TUCIC!</div><div class="ps">Cada módulo é um passo na sua jornada espiritual.</div>
+      <div class="rc"><div class="rt">É com alegria que te recebemos</div><div class="rb">Aqui você encontrará todas as orientações para compreender, viver e crescer dentro da casa — com fé, respeito e consciência. Navegue pelo menu lateral.</div></div>
+      <div class="av blue"><div class="avtag" style="background:rgba(96,165,250,.12);color:#93C5FD;border:1px solid rgba(96,165,250,.22);">Quiz de Boas-Vindas</div><div class="avt" style="color:#93C5FD;">Teste seu aprendizado!</div><div class="avb">10 perguntas rápidas sobre o manual. 👉 <a href="https://tally.so/r/w5yPjo" target="_blank" style="color:var(--ouro);">Acessar quiz</a></div></div>
+      <div class="av green"><div class="avtag" style="background:rgba(52,211,153,.1);color:#34D399;border:1px solid rgba(52,211,153,.25);">Cadastro de Médium</div><div class="avt" style="color:#34D399;">Formulário para novos integrantes</div><div class="avb">👉 <a href="https://tally.so/r/wabad2" target="_blank" style="color:var(--ouro);">Acessar cadastro</a></div></div>
+    </div>
+
+    <!-- PRECEITOS -->
+    <div id="sec-preceitos" class="sec">
+      <div class="ph">Preceitos</div><div class="ps">24 horas antes de cada atividade litúrgica</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('pr','intro',this)">O que é</button>
+        <button class="tab" onclick="tab('pr','proib',this)">Proibições</button>
+        <button class="tab" onclick="tab('pr','quando',this)">Quando</button>
+        <button class="tab" onclick="tab('pr','colet',this)">Coletivo</button>
+      </div>
+      <div id="pr-intro" class="tc active">
+        <div class="rc"><div class="rt">A importância do preceito</div><div class="rb">Quando não fazemos o preceito, nosso corpo permanece energeticamente carregado, impedindo a aproximação dos guias de luz.<br><br><strong style="color:var(--ouro-d);">💡 Exemplo:</strong> Trabalhos às 20h de sexta → preceito inicia às 20h de quinta.</div></div>
+        <div class="av warn"><div class="avb">É perceptível quando alguém não fez o preceito. Não tente enganar — isso prejudica apenas a si mesmo.</div></div>
+      </div>
+      <div id="pr-proib" class="tc">
+        <div class="rc"><div class="rt">Proibições nas 24h antes da gira</div><div class="rb">
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Bebidas alcoólicas</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Entorpecentes</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Relações sexuais</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Carne vermelha</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Cemitérios e hospitais</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Locais de baixa vibração</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Roupas escuras (exceto necessidade profissional)</div></div>
+        </div></div>
+        <div class="av gold"><div class="avb">Cuide também do estado mental: evite brigas e pensamentos negativos. Prefira roupas claras. ✨</div></div>
+      </div>
+      <div id="pr-quando" class="tc">
+        <div class="rc"><div class="rt">Quando é necessário</div><div class="rb">
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Gira principal (sexta-feira)</div></div>
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Gira de desenvolvimento (quarta-feira)</div></div>
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Gira de Cura (segunda-feira)</div></div>
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Homenagens · Batizados · Consagrações · Obrigações · Firmezas · Amacis</div></div>
+          <div class="li"><div class="ld" style="background:#34D399;"></div><div class="lt"><strong style="color:#34D399;">Não necessário:</strong> Mutirões e confraternizações</div></div>
+        </div></div>
+      </div>
+      <div id="pr-colet" class="tc">
+        <div class="av warn"><div class="avtag" style="background:rgba(251,191,36,.12);color:#FBBF24;border:1px solid rgba(251,191,36,.28);">‼️ Preceito Coletivo</div><div class="avt" style="color:#FBBF24;">Obrigação de um irmão de santo</div><div class="avb">Quando um médium é recolhido para uma obrigação, todos os filhos entram em preceito coletivo para fortalecer a egrégora.</div></div>
+      </div>
+    </div>
+
+    <!-- MENSALIDADE -->
+    <div id="sec-mensalidade" class="sec">
+      <div class="ph">Mensalidade</div><div class="ps">Contribuição mensal para a manutenção do terreiro</div>
+      <div class="mb"><div><div class="mv">R$ 90,00</div><div class="ml">MENSALIDADE · VENCIMENTO DIA 20</div></div><div style="font-size:11.5px;color:var(--muted);line-height:1.7;">Vigência começa no mês de entrada.<br>Se entrou após o dia 20, primeiro boleto vence no mês seguinte.</div></div>
+      <div class="rc"><div class="rt">Como pagar</div><div class="rm">O boleto chega por e-mail</div><div class="rb">
+        <div class="sr"><div class="sn">1</div><div class="st"><strong style="color:var(--ouro-d);">Código de barras</strong> do boleto</div></div>
+        <div class="sr"><div class="sn">2</div><div class="st"><strong style="color:var(--ouro-d);">QR Code do boleto</strong> — entra como PIX automaticamente</div></div>
+        <div class="sr"><div class="sn">3</div><div class="st"><strong style="color:var(--ouro-d);">DDA</strong> — vinculado ao seu CPF</div></div>
+        <div class="pixb">⚠️ PIX direto sem usar o QR: envie comprovante ao financeiro.<br>CNPJ: <strong style="color:var(--ouro-d);">43.812.115/0001-93</strong></div>
+      </div></div>
+      <div class="rc"><div class="rt">Não pode pagar?</div><div class="rb">Avise o Pai Pequeno Luciano e a MDS. A ajuda pode ser não financeira — limpeza, manutenção. Combine previamente.</div></div>
+    </div>
+
+    <!-- VELA -->
+    <div id="sec-vela" class="sec">
+      <div class="ph">Consagrar a Vela</div><div class="ps">Passo a passo para consagrar ao seu guia ou anjo da guarda</div>
+      <div class="rc"><div style="margin-bottom:8px;"><span class="sn" style="display:inline-flex;">1</span><strong style="color:var(--ouro-d);">Prepare o ambiente</strong></div><div class="rb">Limpe o local e coloque um copo de água ao lado para proteção e purificação.</div></div>
+      <div class="rc"><div style="margin-bottom:8px;"><span class="sn" style="display:inline-flex;">2</span><strong style="color:var(--ouro-d);">Escolha a vela</strong></div><div class="rb">Use a cor do seu guia de frente. A vela de 7 dias é ideal para trabalho contínuo.</div></div>
+      <div class="rc"><div style="margin-bottom:8px;"><span class="sn" style="display:inline-flex;">3</span><strong style="color:var(--ouro-d);">Consagre com intenção</strong></div><div class="rb">Segure a vela, feche os olhos e mentalize sua intenção com fé. Ore ao seu guia.</div></div>
+      <div class="rc"><div style="margin-bottom:8px;"><span class="sn" style="display:inline-flex;">4</span><strong style="color:var(--ouro-d);">Acenda com consciência</strong></div><div class="rb">Mantenha pensamentos elevados. Nunca deixe vela acesa sem supervisão.</div></div>
+      <div class="av gold"><div class="avb">A vela é de responsabilidade individual — não está autorizado pegar velas do terreiro para uso pessoal.</div></div>
+    </div>
+
+    <!-- GUIAS -->
+    <div id="sec-guias" class="sec">
+      <div class="ph">Guias</div><div class="ps">Colares sagrados que identificam, ancoram o axé e protegem</div>
+      <div class="gc"><div class="gtag" style="background:rgba(96,165,250,.1);color:#93C5FD;border:1px solid rgba(96,165,250,.22);">1ª Guia do Médium</div><div class="rt">Guia de Proteção / Identificação</div><div class="rm">Uso diário e nas giras</div><div class="rb">Identifica o guia de frente. Pode ser usada fora do terreiro como proteção diária. Miçangas leitosas de 3mm na cor da linha do guia de frente.</div></div>
+      <div class="gc"><div class="gtag" style="background:rgba(238,206,59,.09);color:var(--ouro);border:1px solid rgba(238,206,59,.22);">Após identificação</div><div class="rt">Guia de Trabalho</div><div class="rm">Somente nas giras</div><div class="rb">Fechada com conta azul escuro (cor do guia da Mãe de Santo). 💡 Se estoura sem motivo, cumpriu sua função de proteção — agradeça e converse com a MDS.</div></div>
+      <div class="gc"><div class="gtag" style="background:rgba(255,255,255,.06);color:#EEE;border:1px solid rgba(255,255,255,.12);">Feita pela MDS</div><div class="rt">Guia de Batizado</div><div class="rm">Confirmação como Umbandista · Branca leitosa</div><div class="rb">Proteção e ancoragem de Oxalá na coroa. Feita exclusivamente pela Mãe de Santo.</div></div>
+      <div class="gc"><div class="gtag" style="background:rgba(139,92,246,.1);color:#C4B5FD;border:1px solid rgba(139,92,246,.22);">Após 7 Linhas</div><div class="rt">Guia das 7 Linhas</div><div class="rm">Feita pelo padrinho</div><div class="rb">Identifica o médium feito nas 7 Linhas. Entregue por um dos padrinhos do batizado.</div></div>
+      <div class="gc"><div class="gtag" style="background:rgba(238,206,59,.12);color:var(--ouro);border:1px solid rgba(238,206,59,.25);">Sacerdócio</div><div class="rt">Guia de Sacerdócio</div><div class="rm">Identifica o Orixá regente</div><div class="rb">Pode conter uma ou mais pernas conforme o grau sacerdotal. Segue regras próprias do ritual da casa.</div></div>
+    </div>
+
+    <!-- OBRIGAÇÕES -->
+    <div id="sec-obrigacoes" class="sec">
+      <div class="ph">Obrigações do Médium</div><div class="ps">Deveres e responsabilidades dentro do terreiro</div>
+      <div class="rc"><div class="rt">Firmezas</div><div class="rb">Manter as firmezas do espaço espiritual em casa — vela, copo d'água e os elementos do guia de frente.</div></div>
+      <div class="rc"><div class="rt">Defumação pessoal</div><div class="rb">Realizar defumação periódica do seu ambiente e de si mesmo.</div></div>
+      <div class="rc"><div class="rt">Mutirões</div><div class="rb">Participar dos mutirões de limpeza e manutenção do terreiro. Não exigem preceito, mas exigem presença.</div></div>
+      <div class="rc"><div class="rt">Funções durante as giras</div><div class="rb">Cambono, curimba, porta-defumador entre outras — designadas pela Mãe de Santo.</div></div>
+    </div>
+
+    <!-- HIERARQUIA -->
+    <div id="sec-hierarquia" class="sec">
+      <div class="ph">Hierarquia do Terreiro</div><div class="ps">Estrutura hierárquica da TUCIC</div>
+      <div class="gi" style="border-color:var(--ouro);"><div class="gn2">TOPO</div><div class="gt">Mãe de Santo — Mãe Rosi de Oxum</div><div class="gd">Dirigente espiritual máxima. Responsável por todas as decisões espirituais.</div></div>
+      <div class="gi"><div class="gn2">SEGUNDO NÍVEL</div><div class="gt">Pai/Mãe Pequenos</div><div class="gd">Auxiliam a Mãe de Santo. Primeiros a consultar em dúvidas do dia a dia.</div></div>
+      <div class="gi"><div class="gn2">TERCEIRO NÍVEL</div><div class="gt">Cambones e Cambiadores</div><div class="gd">Assistentes dos médiuns incorporados. Papel fundamental de cuidado e proteção.</div></div>
+      <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">BASE</div><div class="gt">Médiuns em Desenvolvimento</div><div class="gd">A espinha dorsal do terreiro. Cada médium tem sua jornada única.</div></div>
+      <div class="av gold"><div class="avb">Expresse respeito aos mais velhos. O axé se conquista com humildade, presença e dedicação.</div></div>
+    </div>
+
+    <!-- POSTURA -->
+    <div id="sec-postura" class="sec">
+      <div class="ph">Postura do Médium</div><div class="ps">Conduta ética e espiritual dentro do terreiro</div>
+      <div class="rc"><div class="rt">Evite fofocas e julgamentos</div><div class="rb">Fofocas enfraquecem a corrente e prejudicam o desenvolvimento de todos.</div></div>
+      <div class="rc"><div class="rt">Lide com críticas com maturidade</div><div class="rb">Críticas da Mãe de Santo são ferramentas de crescimento, não ataques pessoais.</div></div>
+      <div class="rc"><div class="rt">Foco no próprio desenvolvimento</div><div class="rb">Evite comparações. O único parâmetro válido é a sua própria evolução espiritual.</div></div>
+      <div class="rc"><div class="rt">Envolvimento com o terreiro</div><div class="rb">O vínculo com a casa e com a Mãe de Santo é parte fundamental do desenvolvimento espiritual.</div></div>
+    </div>
+
+    <!-- CURSOS -->
+    <div id="sec-cursos" class="sec">
+      <div class="ph">Cursos no Terreiro</div><div class="ps">Formação espiritual — pré-requisito para consagrações</div>
+      <div class="rc"><div class="rt">Curso de Teologia da TUCIC</div><div class="rm">Pai Augusto de Oxalá · Terças quinzenais · 19h30–22h</div><div class="rb">Matrículas: dezembro a 31 de janeiro. Pré-requisito para consagrações.</div></div>
+      <div class="rc"><div class="rt">Gira de Desenvolvimento</div><div class="rm">Mãe Karol de Oxum · Quartas-feiras</div><div class="rb">Aprendizado e evolução espiritual. Orientações individuais e coletivas da Mãe de Santo.</div></div>
+      <div class="av blue"><div class="avb" style="color:rgba(200,200,200,.7);">Para riscar o ponto do seu guia de frente, avise a cambone Rei (Emanoelle) e a Mãe Rosi.</div></div>
+    </div>
+
+    <!-- BANHOS -->
+    <div id="sec-banhos" class="sec">
+      <div class="ph">Banhos de Ervas</div><div class="ps">Uma das ferramentas mais importantes do trabalho espiritual</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('bn','como',this)">Como tomar</button>
+        <button class="tab" onclick="tab('bn','ervas',this)">Tipos de ervas</button>
+        <button class="tab" onclick="tab('bn','oxala',this)">Ervas de Oxalá</button>
+        <button class="tab" onclick="tab('bn','cuid',this)">Cuidados</button>
+      </div>
+      <div id="bn-como" class="tc active">
+        <div class="rc"><div class="rt">Como aplicar</div><div class="rb">Do <strong style="color:var(--ouro-d);">pescoço para baixo</strong>, focando nos chakras — frente, costas, nuca, axilas.</div>
+          <div class="li" style="margin-top:8px;"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Mentalize com fé: ore, agradeça ou peça equilíbrio físico, espiritual e emocional</div></div>
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Sempre em números ímpares de ervas: 1, 3, 5 ou 7</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Nunca jogue ervas no lixo — use o vaso preto quadrado externo do terreiro</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Sem banho = energia densa e risco de mal-estar na gira</div></div>
+        </div>
+      </div>
+      <div id="bn-ervas" class="tc">
+        <div class="rc"><div class="rt">Para Desenvolvimento Mediúnico</div><div style="margin:6px 0;"><span class="badge">Samambaia</span></div><div class="rb">Do pescoço aos pés. Equilibra o campo espiritual e abre o caminho mediúnico.</div></div>
+        <div class="rc"><div class="rt">Para Auxílio na Incorporação</div><div style="margin:6px 0;"><span class="badge">Samambaia</span><span class="badge">Anis estrelado</span><span class="badge">Alecrim</span><span class="badge">Água de coco</span></div><div class="rb">Harmoniza completamente o campo espiritual para firmeza de incorporação.</div></div>
+        <div class="av gold"><div class="avb">🌿 Sem ervas específicas? Use ervas de Oxalá: <strong>alfazema, boldo, alecrim, manjericão ou arruda.</strong></div></div>
+      </div>
+      <div id="bn-oxala" class="tc">
+        <div class="rc"><div class="rt">Ervas de Oxalá</div><div class="rm">Única exceção que pode ir à coroa</div><div class="rb">Natureza suave, equilibradora e purificadora. Podem ser usadas também na coroa com fé, respeito e intenção positiva.</div></div>
+        <div style="margin:10px 0;"><span class="badge">Alfazema</span><span class="badge">Boldo</span><span class="badge">Alecrim</span><span class="badge">Manjericão</span><span class="badge">Arruda</span></div>
+        <div class="av gold"><div class="avb">✨ A coroa é o ponto de maior sensibilidade energética. Use ervas de Oxalá na coroa com consciência, oração e equilíbrio.</div></div>
+      </div>
+      <div id="bn-cuid" class="tc">
+        <div class="rc"><div class="rt">Tomando o banho no terreiro</div><div class="rb">
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Leve uma toalha clara</div></div>
+          <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt">Sem ervas: colha no jardim do terreiro, sentindo quais usar</div></div>
+          <div class="li"><div class="ld" style="background:#EF4444;"></div><div class="lt">Nunca toque nas ervas de outros médiuns</div></div>
+        </div></div>
+        <div class="av warn"><div class="avt" style="color:#FBBF24;">Descarte correto</div><div class="avb">Vaso preto quadrado na parte externa do terreiro. O que vem da natureza, volta para a natureza.</div></div>
+      </div>
+    </div>
+
+    <!-- DEFUMAÇÃO -->
+    <div id="sec-defumacao" class="sec">
+      <div class="ph">Defumação</div><div class="ps">Purificação pelo fogo e pela fumaça sagrada</div>
+      <div class="rc"><div class="rt">Limpeza Geral do Ambiente</div><div style="margin:6px 0;"><span class="badge">Mirra</span><span class="badge">Arruda</span><span class="badge">Alecrim</span></div><div class="rb">Abra as janelas. Passe em sentido horário do fundo à porta. Entoe cantiga a Ogum ou Oxalá.</div></div>
+      <div class="rc"><div class="rt">Defumação Pessoal de Proteção</div><div style="margin:6px 0;"><span class="badge">Benjoim</span><span class="badge">Olíbano</span><span class="badge">Copal</span></div><div class="rb">Dos pés à cabeça em movimentos circulares. Ideal antes de trabalhos ou em momentos de vulnerabilidade.</div></div>
+      <div class="rc"><div class="rt">Cachimbo dos Pretos Velhos</div><div style="margin:6px 0;"><span class="badge">Erva-santa</span><span class="badge">Tabaco</span><span class="badge">Canela em pó</span></div><div class="rb">Limpeza espiritual removendo larvas astrais e energias negativas da aura.</div></div>
+    </div>
+
+    <!-- BATE-FOLHAS -->
+    <div id="sec-batefolhas" class="sec">
+      <div class="ph">Bate-Folhas</div><div class="ps">Tradição viva das folhas sagradas de cada Orixá</div>
+      <div class="rc"><div class="rt">O que é</div><div class="rb">Maços de folhas frescas usados para bater suavemente no corpo, removendo energias densas. Cada Orixá possui suas folhas específicas.</div></div>
+      <div class="rc"><div class="rt">Folhas de Ogum</div><div style="margin:6px 0;"><span class="badge">Espada de São Jorge</span><span class="badge">Arruda</span><span class="badge">Guiné</span></div><div class="rb">Descarrego, proteção e abertura de caminhos.</div></div>
+      <div class="rc"><div class="rt">Folhas de Oxóssi</div><div style="margin:6px 0;"><span class="badge">Alfazema</span><span class="badge">Pinhão branco</span><span class="badge">Louro</span><span class="badge">Cipó</span></div><div class="rb">Atam-se com barbante natural. Molha-se levemente. Bate-se do pescoço para baixo com oração e intenção clara.</div></div>
+    </div>
+
+    <!-- CHÁS E PÓS -->
+    <div id="sec-chas" class="sec">
+      <div class="ph">Chás e Pós</div><div class="ps">Do corpo à alma — saúde, equilíbrio e fé</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('ch','chas',this)">Chás</button>
+        <button class="tab" onclick="tab('ch','pos',this)">Pós</button>
+      </div>
+      <div id="ch-chas" class="tc active">
+        <div class="rc"><div class="rt">Curiado — Bebida dos Caboclos de Oxóssi</div><div style="margin:6px 0;"><span class="badge">Vinho tinto</span><span class="badge">Água</span><span class="badge">Mel</span></div><div class="rb">Uso ritual pelos Caboclos de Oxóssi em suas magias.</div></div>
+        <div class="rc"><div class="rt">Chá de Calmaria</div><div style="margin:6px 0;"><span class="badge">Camomila</span><span class="badge">Erva-cidreira</span><span class="badge">Maracujá</span><span class="badge">Mel</span></div><div class="rb">Ferva 500ml, adicione ervas fora do fogo, tampe 10 min, coe e adoce. Beba morno antes de dormir.</div></div>
+        <div class="rc"><div class="rt">Chá de Força</div><div style="margin:6px 0;"><span class="badge">Guaraná</span><span class="badge">Gengibre</span><span class="badge">Canela</span><span class="badge">Limão</span></div><div class="rb">Pela manhã em jejum. Ative com gratidão a Ogum ou Xangô. Não use à noite.</div></div>
+      </div>
+      <div id="ch-pos" class="tc">
+        <div class="rc"><div class="rt">Pemba Branca — Oxalá</div><div class="rb">Para traçar pontos, ungir objetos sagrados e pedidos de paz e pureza.</div></div>
+        <div class="rc"><div class="rt">Pó de Proteção</div><div style="margin:6px 0;"><span class="badge">Arruda em pó</span><span class="badge">Sal fino</span><span class="badge">Incenso em pó</span></div><div class="rb">Misture em partes iguais. Use na soleira da porta. Ative com prece a Ogum.</div></div>
+        <div class="rc"><div class="rt">Patuás dos Pretos Velhos</div><div class="rb">Saquinhos com elementos de magia para proteção corporal. Segredos transmitidos pela linha de trabalho.</div></div>
+      </div>
+    </div>
+
+    <!-- ORIXÁS -->
+    <div id="sec-orixas" class="sec">
+      <div class="ph">Orixás Cultuados no TUCIC</div><div class="ps">Clique em um orixá para ver a saudação completa</div>
+      <div class="og" id="og"></div>
+      <div id="odet" style="display:none;margin-top:12px;"></div>
+    </div>
+
+    <!-- GIRAS -->
+    <div id="sec-giras" class="sec">
+      <div class="ph">Giras do TUCIC</div><div class="ps">As 10 giras e seus fundamentos espirituais</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('gr','seq',this)">Sequência</button>
+        <button class="tab" onclick="tab('gr','fund',this)">Fundamentos</button>
+        <button class="tab" onclick="tab('gr','agenda',this)">Agenda</button>
+      </div>
+      <div id="gr-seq" class="tc active"></div>
+      <div id="gr-fund" class="tc"></div>
+      <div id="gr-agenda" class="tc">
+        <div class="rc"><div class="rt">Giras de Cura</div><div class="rm">Quinzenal</div><div class="rb">Segundas-feiras · 20h · Mãe Fernanda Trovão de Oxum</div></div>
+        <div class="rc"><div class="rt">Gira de Desenvolvimento</div><div class="rm">Quinzenal</div><div class="rb">Quartas-feiras · Mãe Karol de Oxum</div></div>
+        <div class="rc"><div class="rt">Curso de Teologia</div><div class="rm">Quinzenal · Matrículas: dez–31 jan</div><div class="rb">Terças-feiras · 19h30–22h · Pai Augusto de Oxalá</div></div>
+        <div class="rc"><div class="rt">Apometria</div><div class="rm">Quinzenal · Por agendamento</div><div class="rb">Segundas-feiras · 19h · <a href="https://forms.gle/wJwCCjGtEbcQ7rnh9" target="_blank" style="color:var(--ouro);">Formulário de cadastro</a></div></div>
+      </div>
+    </div>
+
+    <!-- LINHAS -->
+    <div id="sec-linhas" class="sec">
+      <div class="ph">Linhas de Trabalho</div><div class="ps">As correntes espirituais cultuadas no TUCIC</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('ln','trab',this)">Linhas do terreiro</button>
+        <button class="tab" onclick="tab('ln','sete',this)">7 Linhas da Umbanda</button>
+      </div>
+      <div id="ln-trab" class="tc active"></div>
+      <div id="ln-sete" class="tc"></div>
+    </div>
+
+    <!-- HISTÓRIA -->
+    <div id="sec-historia" class="sec">
+      <div class="ph">História do TUCIC</div><div class="ps">A caminhada da Mãe Rosi de Oxum e a fundação do terreiro</div>
+      <div class="tabs">
+        <button class="tab active" onclick="tab('hs','mae',this)">Mãe Rosi</button>
+        <button class="tab" onclick="tab('hs','equipe',this)">Equipe</button>
+        <button class="tab" onclick="tab('hs','linhagem',this)">Linhagem</button>
+      </div>
+      <div id="hs-mae" class="tc active">
+        <div class="ec"><div class="en">Mãe Rosi de Oxum</div><div class="eca">Chefe de Terreiro · Orixá: Oxum · Adjunto: Ogum</div><div class="ebo">Guia de Frente: Cabocla Inaê das Cachoeiras · Doutrinador: Caboclo Sol Nascente · Coordenadora: Vó Maria Conga</div></div>
+        <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">1993</div><div class="gt">Início da caminhada em Florianópolis</div></div>
+        <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">1997–2012</div><div class="gt">Terreiro Mamãe Oxum — Rio do Sul/SC</div><div class="gd">15 anos no Omolokô com a Ialalorixá Lourdes de Oxum. Camarinha em 2010.</div></div>
+        <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">2013–2017</div><div class="gt">Terreiro Marola do Mar — Biguaçu/SC</div><div class="gd">Preparada como Mãe Pequena (Médium de Sete Linhas).</div></div>
+        <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">2019</div><div class="gt">Início dos trabalhos do TUCIC</div><div class="gd">Em casa, sob orientação da Vó Maria Conga e do Caboclo Sol Nascente.</div></div>
+        <div class="gi" style="border-color:rgba(238,206,59,.25);"><div class="gn2">2021</div><div class="gt">Ordenação Sacerdotal — TUFRA/SP</div><div class="gd">Com Pai Márcio Kain, nos fundamentos da FUGABC.</div></div>
+        <div class="gi" style="border-color:var(--ouro);"><div class="gn2">JANEIRO 2022</div><div class="gt">Sede da TUCIC aberta ao público</div></div>
+      </div>
+      <div id="hs-equipe" class="tc">
+        <div class="ec"><div class="en">Mãe Karol de Oxum</div><div class="eca">Desenvolvimento Mediúnico</div><div class="ebo">Orixá: Oxum · Adjunto: Ogum · Guia: Cabocla Açucena das Cachoeiras</div></div>
+        <div class="ec"><div class="en">Mãe Fernanda Trovão de Oxum</div><div class="eca">Gira de Cura</div><div class="ebo">Orixá: Oxalá · Adjunto: Oxum · Guia: Preta Velha Vó Rita de Aruanda</div></div>
+        <div class="ec"><div class="en">Pai Augusto de Oxalá</div><div class="eca">Curso de Teologia</div><div class="ebo">Orixá: Oxalá · Adjunto: Iansã · Guia: Preto Velho Pai Joaquim de Aruanda</div></div>
+        <div class="ec"><div class="en">Pai Pequeno Luciano</div><div class="eca">Financeiro</div><div class="ebo">Contato para boletos, 2ª via e comprovantes</div></div>
+      </div>
+      <div id="hs-linhagem" class="tc">
+        <div class="rc"><div class="rt">Babalaô Marcio Silva Kain — TUFRA/SP</div><div class="rm">Pai de Santo que consagrou Mãe Rosi</div><div class="rb">Filho de Xangô e Iemanjá. Consagrado pelo Babalorixá Ronaldo Linares e Babá Dirce Fogo.</div></div>
+        <div class="rc"><div class="rt">Ialalorixá Mãe Lourdes de Oxum</div><div class="rm">Consagração no Omolokô · CEMO 1978</div><div class="rb">Filha de Oxum e Xangô. Faleceu em novembro de 2022.</div></div>
+        <div class="rc"><div class="rt">Babalaô Ronaldo Linares & Babá Dirce Fogo</div><div class="rm">Avós espirituais — FUGABC/SP</div><div class="rb">Pai Ronaldo fundamentou seu ritual com Zélio Fernandino de Morais.</div></div>
+        <div class="rc"><div class="rt">Trisavô: Zélio Fernandino de Morais — RJ</div><div class="rm">Fundador da Umbanda no Brasil</div><div class="rb">Linha direta de fundamento umbandista que chega até o TUCIC.</div></div>
+      </div>
+    </div>
+
+    <!-- AVISOS -->
+    <div id="sec-avisos" class="sec">
+      <div class="ph">Avisos</div><div class="ps">Comunicados da liderança do TUCIC</div>
+      <div class="av blue"><div class="avtag" style="background:rgba(96,165,250,.1);color:#93C5FD;border:1px solid rgba(96,165,250,.2);">Portal novo</div><div class="avt" style="color:#93C5FD;">Bem-vindos ao Portal TUCIC!</div><div class="avb">O portal está sendo construído com todo o conteúdo do terreiro. Saravá!</div></div>
+      <div class="av green"><div class="avtag" style="background:rgba(52,211,153,.08);color:#34D399;border:1px solid rgba(52,211,153,.22);">Recorrente</div><div class="avt" style="color:#34D399;">Gira de Cura — Segundas quinzenais, 20h</div><div class="avb">Mãe Fernanda Trovão de Oxum. Preceito obrigatório 24h antes.</div></div>
+    </div>
+
+    <!-- CALENDÁRIO -->
+    <div id="sec-calendario" class="sec">
+      <div class="ph">Calendário Sagrado</div><div class="ps">Agenda fixa e eventos do TUCIC</div>
+      <div class="rc"><div class="rt">Agenda fixa quinzenal</div><div class="rb">
+        <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt"><strong>Segundas 19h</strong> — Apometria (por agendamento)</div></div>
+        <div class="li"><div class="ld" style="background:var(--ouro);"></div><div class="lt"><strong>Segundas 20h</strong> — Gira de Cura</div></div>
+        <div class="li"><div class="ld" style="background:#3B82F6;"></div><div class="lt"><strong>Terças 19h30</strong> — Curso de Teologia</div></div>
+        <div class="li"><div class="ld" style="background:#8B5CF6;"></div><div class="lt"><strong>Quartas</strong> — Gira de Desenvolvimento</div></div>
+      </div></div>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="sec-admin" class="sec">
+      <div class="ph">Gestão de Membros</div><div class="ps">Aprovações e controle de acesso ao portal</div>
+      <div style="overflow-x:auto;">
+        <table class="at">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Relação</th><th>Status</th><th>Ação</th></tr></thead>
+          <tbody>
+            <tr><td>Maria das Dores</td><td>maria@email.com</td><td>Filha de santo</td><td class="sp">⏳ Pendente</td><td><button class="ap2" onclick="aprovar(this)">Aprovar</button><button class="rj2" onclick="recusar(this)">Recusar</button></td></tr>
+            <tr><td>João Pereira</td><td>joao@email.com</td><td>Médium em dev.</td><td class="sp">⏳ Pendente</td><td><button class="ap2" onclick="aprovar(this)">Aprovar</button><button class="rj2" onclick="recusar(this)">Recusar</button></td></tr>
+            <tr><td>Ana Lima</td><td>ana@email.com</td><td>Iaô</td><td class="sa">✓ Ativo</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+// ===== DADOS =====
+var USERS={
+  'admin@tucic.com':{pass:'tucic2024',name:'Mãe Rosi de Oxum',role:'ADMINISTRADORA',ini:'MR',admin:true},
+  'membro@tucic.com':{pass:'tucic2024',name:'Membro TUCIC',role:'MEMBRO',ini:'MT',admin:false}
+};
+var ORIXAS=[
+  {n:'Oxalá',s:'Êbaba · Êpa Baba',cor:'#F1F5F9',sig:'O senhor realiza · Obrigado Pai'},
+  {n:'Ogum',s:'Patacori Ogum · Ogunhê',cor:'#DC2626',sig:'Salve o cortador de caminhos · Salve Ogum'},
+  {n:'Xangô',s:'Caô Cabesilê',cor:'#92400E',sig:'Permita-me vê-lo, Majestade'},
+  {n:'Oxóssi',s:'Okê Arô Oxóssi',cor:'#15803D',sig:'Dê seu brado, Majestade'},
+  {n:'Obaluaê/Omulu',s:'Atotô',cor:'#334155',sig:'Silêncio, ele está entre nós'},
+  {n:'Iemanjá',s:'Odôcy Iabá',cor:'#38BDF8',sig:'Salve a Senhora das Águas'},
+  {n:'Oxum',s:'Ora ie ie Oxum',cor:'#1D4ED8',sig:'Olha por nós mãezinha'},
+  {n:'Iansã',s:'Eparrei Oiá',cor:'#CA8A04',sig:'Salve o raio, Iansã'},
+  {n:'Nanã',s:'Saluba Nanã',cor:'#7C3AED',sig:'Salve a Mãe de todas as Mães'},
+  {n:'Ibeji',s:'Omi Ibejada',cor:'#EC4899',sig:'Ele é dois'},
+  {n:'Oba',s:'Oba Xirê · Akirô Oba Yê',cor:'#BE123C',sig:'Eu saúdo o seu conhecimento, Senhora da Terra'},
+];
+var GIRAS=[
+  {num:'1ª',n:"Povo d'Água — Marinheiros",tipo:'Descarrego',desc:"Entidades muito elevadas. Chegam girando, limpando com águas e vento. Não fazem consultas."},
+  {num:'2ª',n:'Pombagira',tipo:'Consultas',desc:'Consultas e trabalhos de magia — vida sentimental, emprego, finanças. Velas vermelhas, cigarros, bebidas doces.'},
+  {num:'3ª',n:'Xangô — Ibejada',tipo:'Descarrego + Consultas',desc:'Xangô: juízes espirituais, trabalham no carma e na lei. Ibejada: grande elevação, para casos de doença, família e gravidez.'},
+  {num:'4ª',n:'Boiadeiros',tipo:'Consultas',desc:'Evolução material e espiritual. Magias com palheiro, cachaça, cerveja e velas.'},
+  {num:'5ª',n:'Ciganos',tipo:'Consultas',desc:'Sorte, dinheiro, prosperidade e amor. Cartas, cristais, incensos, fumo e flores.'},
+  {num:'6ª',n:'Exu',tipo:'Consultas',desc:'Defesa dos médiuns e do terreiro. Velas pretas e vermelhas, charutos, bebidas fortes.'},
+  {num:'7ª',n:'Obaluaê/Omulu — Baianos',tipo:'Descarrego + Consultas',desc:'Omulu: energia da terra/água para saúde, não fazem consultas. Baianos: atendimentos de consulta.'},
+  {num:'8ª',n:'Oxóssi',tipo:'Descarrego + Consultas Rápidas',desc:'Charutos para limpeza, tomam Curiado. Ajudam na vida material. Conselhos rápidos e práticos.'},
+  {num:'9ª',n:'Ogum — Malandros',tipo:'Descarrego',desc:'Braço forte de Oxalá. Não dão consultas. Charuto, cerveja, espada ou ervas.'},
+  {num:'10ª',n:'Pretos Velhos',tipo:'Consultas',desc:'Psicólogos dos aflitos. Cachimbo para limpeza, rezas, patuás. Café preto, consertada e cachaça com mel.'},
+];
+var LINHAS=[
+  {n:"Linha das Águas",d:"Caboclas de Iemanjá, Oxum, Obá, Iansã e Nanã",c:'#38BDF8'},
+  {n:"Linha de Ibejada",d:"Erês — Crianças de Ibeji",c:'#EC4899'},
+  {n:"Linha das Almas",d:"Obaluaê/Omulu, Pretos Velhos",c:'#475569'},
+  {n:"Linha de Ogum",d:"Caboclos ou Falangeiros de Ogum",c:'#DC2626'},
+  {n:"Linha de Oxossi",d:"Caboclos de Oxóssi",c:'#15803D'},
+  {n:"Linha de Xangô",d:"Caboclos de Xangô",c:'#92400E'},
+  {n:"Linha de Ciganos",d:"Espíritos ciganos",c:'#D97706'},
+  {n:"Linha do Povo do Oriente",d:"Espíritos elevados de cura",c:'#EA580C'},
+  {n:"Linha de Boiadeiros",d:"Espíritos da boiada e do campo",c:'#78350F'},
+  {n:"Linha de Marinheiros",d:"Povo d'água — marinheiros e piratas",c:'#1D4ED8'},
+  {n:"Linha de Malandros",d:"Coordenada por Zé Pelintra",c:'#9F1239'},
+  {n:"Linha da Esquerda",d:"Exu, Pomba-Gira e Mirim",c:'#334155'},
+  {n:"Linha de Baianos",d:"Baianos e suas correntes",c:'#B45309'},
+];
+var SETE=[
+  {n:'Oriente',o:'Oxalá',v:'FÉ',c:'#EA580C'},
+  {n:'Ogum',o:'Ogum',v:'LEI · ORDENAÇÃO',c:'#DC2626'},
+  {n:'Xangô',o:'Xangô',v:'JUSTIÇA · JULGAMENTO · RAZÃO',c:'#92400E'},
+  {n:'Oxóssi',o:'Oxóssi',v:'DOUTRINA · CONHECIMENTO',c:'#15803D'},
+  {n:"Povo d'Água",o:'Iemanjá, Oxum, Iansã, Nanã',v:'AMOR · GERAÇÃO',c:'#38BDF8'},
+  {n:'Almas',o:'Obaluaê/Omulú',v:'EVOLUÇÃO · HUMILDADE',c:'#7C3AED'},
+  {n:'Ibejada/Erês',o:'Ibeji',v:'INOCÊNCIA · ALEGRIA · SAÚDE',c:'#EC4899'},
+];
+
+// ===== NAVEGAÇÃO =====
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  var el=document.getElementById(id);
+  if(el){el.classList.add('active');el.style.display=(id==='v-login'||id==='v-solicitar')?'flex':'block';}
+}
+function sec(id,el){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  var s=document.getElementById('sec-'+id);if(s)s.classList.add('active');
+  if(el)el.classList.add('active');
+  var m=document.querySelector('.main');if(m)m.scrollTop=0;
+}
+function tab(g,id,el){
+  var p=g+'-';
+  document.querySelectorAll('[id^="'+p+'"]').forEach(t=>{if(t.classList.contains('tc'))t.classList.remove('active');});
+  var t=document.getElementById(p+id);if(t)t.classList.add('active');
+  if(el){el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+}
+
+// ===== AUTH =====
+function doLogin(){
+  var email=document.getElementById('email').value.trim().toLowerCase();
+  var senha=document.getElementById('senha').value;
+  var err=document.getElementById('err');
+  var u=USERS[email];
+  if(u&&u.pass===senha){
+    err.style.display='none';
+    document.getElementById('sb-av').textContent=u.ini;
+    document.getElementById('sb-name').textContent=u.name;
+    document.getElementById('sb-role').textContent=u.role;
+    document.getElementById('header-user').textContent=u.name;
+    document.getElementById('btn-sair').style.display='block';
+    if(u.admin)document.getElementById('adm-nav').style.display='block';
+    show('v-dash');
+    buildDash();
+  } else {
+    err.textContent='E-mail ou senha incorretos.';
+    err.style.display='block';
+  }
+}
+function logout(){
+  document.getElementById('btn-sair').style.display='none';
+  document.getElementById('header-user').textContent='';
+  document.getElementById('adm-nav').style.display='none';
+  document.getElementById('email').value='';
+  document.getElementById('senha').value='';
+  show('v-login');
+}
+
+// ===== BUILD DINÂMICO =====
+var built=false;
+function buildDash(){
+  if(built)return;built=true;
+  // Orixás
+  var og=document.getElementById('og');
+  ORIXAS.forEach((o,i)=>{
+    var d=document.createElement('div');d.className='oc';
+    d.innerHTML='<span class="odot" style="background:'+o.cor+'"></span><div class="on">'+o.n+'</div><div class="os2">'+o.s+'</div>';
+    d.onclick=()=>{
+      var det=document.getElementById('odet');
+      det.innerHTML='<div class="rc"><div class="rt">'+o.n+'</div><div class="rm">Saudação · Significado</div><div style="margin-bottom:6px;"><span class="odot" style="background:'+o.cor+';display:inline-block;"></span><strong style="color:var(--ouro-d);font-size:13px;margin-left:4px;">'+o.s+'</strong></div><div class="rb">'+o.sig+'</div></div>';
+      det.style.display='block';
+    };
+    og.appendChild(d);
+  });
+  // Giras
+  var gs=document.getElementById('gr-seq'),gf=document.getElementById('gr-fund');
+  GIRAS.forEach(g=>{
+    gs.innerHTML+='<div class="gi"><div class="gn2">'+g.num+' GIRA</div><div class="gt">'+g.n+'</div><div style="margin-top:4px;"><span class="badge">'+g.tipo+'</span></div></div>';
+    gf.innerHTML+='<div class="gi"><div class="gn2">'+g.num+' · '+g.tipo.toUpperCase()+'</div><div class="gt">'+g.n+'</div><div class="gd">'+g.desc+'</div></div>';
+  });
+  // Linhas
+  var lt=document.getElementById('ln-trab'),ls=document.getElementById('ln-sete');
+  LINHAS.forEach(l=>{lt.innerHTML+='<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:12px;font-weight:700;color:var(--ouro-d);margin-bottom:1px;">'+l.n+'</div><div class="lt">'+l.d+'</div></div></div>';});
+  SETE.forEach(l=>{ls.innerHTML+='<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:12px;font-weight:700;color:var(--ouro-d);">'+l.n+' <span style="font-size:9px;color:rgba(238,206,59,.3);">'+l.o+'</span></div><div class="lt"><strong style="color:var(--ouro-d);font-size:10px;">'+l.v+'</strong><br>'+l.d+'</div></div></div>';});
+}
+
+// ===== ADMIN =====
+function aprovar(btn){var r=btn.closest('tr');r.cells[3].className='sa';r.cells[3].textContent='✓ Ativo';r.cells[4].innerHTML='—';}
+function recusar(btn){var r=btn.closest('tr');r.style.opacity='.35';r.cells[3].textContent='✗ Recusado';r.cells[4].innerHTML='—';}
+
+// Enter para logar
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!document.getElementById('v-login').classList.contains('active')===false)doLogin();});
+</script>
+</body>
+</html>
