@@ -633,7 +633,52 @@ select.finput{cursor:pointer;}
         <div class="ccard" onclick="sec('giras',null)"><div class="ci">🌀</div><div class="ct">Giras</div><div class="cd">As 10 giras e seus fundamentos</div></div>
         <div class="ccard" onclick="sec('orixas',null)"><div class="ci">✨</div><div class="ct">Orixás</div><div class="cd">Saudações e cores vibratórias</div></div>
       </div>
-    </div>
+
+      <!-- PRIMEIRO ACESSO -->
+      <div id="home-primeiro-acesso" style="background:linear-gradient(135deg,#EEF2FF 0%,#E0E7FF 100%);border:1.5px solid var(--borda-azul);border-radius:14px;padding:20px 22px;margin-top:16px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <span style="font-size:22px;">✨</span>
+          <div style="font-size:16px;font-weight:800;color:var(--azul);">Primeiro acesso?</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Preencha seus dados abaixo para iniciar seu cadastro no terreiro. Leva menos de 2 minutos!</div>
+        <div id="home-cad-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="form-group"><label>Nome de registro *</label><input class="finput" id="hc-nome" placeholder="Seu nome completo"></div>
+            <div class="form-group"><label>Nome no terreiro</label><input class="finput" id="hc-nome-terreiro" placeholder="Como quer ser chamado(a)"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="form-group"><label>E-mail *</label><input class="finput" type="email" id="hc-email" placeholder="seu@email.com"></div>
+            <div class="form-group"><label>Celular *</label><input class="finput" id="hc-celular" placeholder="(48) 99999-9999"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <div class="form-group"><label>Data de nascimento</label><input class="finput" type="date" id="hc-nascimento"></div>
+            <div class="form-group"><label>Instagram</label><input class="finput" id="hc-instagram" placeholder="@usuario"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Nível espiritual</label>
+            <select class="finput" id="hc-nivel">
+              <option value="">Selecione</option>
+              <option>Médium iniciante</option><option>Médium em desenvolvimento</option>
+              <option>Médium desenvolvido (sem ponto)</option><option>Médium desenvolvido (com ponto)</option>
+              <option>Médium com cruzamento</option><option>Pai/Mãe pequeno(a)</option>
+              <option>Pai/Mãe de Santo coroado</option>
+            </select>
+          </div>
+          <div id="hc-erro" style="display:none;color:#991B1B;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 12px;font-size:13px;margin-bottom:10px;"></div>
+          <button onclick="iniciarCadastroHome()" class="btn-primary" style="width:100%;padding:13px;font-size:14px;border-radius:10px;">Salvar e completar ficha →</button>
+          <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Seus dados ficam salvos — complete depois pelo menu "📝 Meu Cadastro"</div>
+        </div>
+        <div id="home-cad-ok" style="display:none;text-align:center;padding:12px 0;">
+          <div style="font-size:32px;margin-bottom:8px;">🌿</div>
+          <div style="font-weight:800;color:#065F46;font-size:15px;margin-bottom:4px;">Dados salvos! Axé!</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Agora complete sua ficha pelo menu lateral.</div>
+          <button onclick="sec('meu-cadastro', document.querySelector('[onclick*=meu-cadastro]'))" class="btn-primary" style="padding:10px 22px;font-size:13px;border-radius:8px;">Ir para Meu Cadastro →</button>
+        </div>
+      </div>
+
+    
+
+        </div>
 
     <!-- CALENDÁRIO 2026 -->
     <div id="sec-calendario" class="sec">
