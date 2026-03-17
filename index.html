@@ -348,7 +348,7 @@ select.finput{cursor:pointer;}
     <div class="login-title">TUCIC</div>
     <div class="login-sub">Tenda de Umbanda Cabocla Inaê das Cachoeiras</div>
     <div class="card">
-      <form onsubmit="doLogin(); return false;" method="post" action="#">
+      <form onsubmit="doLogin(); return false;" autocomplete="on">
       <div class="err-box" id="err"></div>
       <label class="flabel">E-mail</label>
       <input class="finput" type="email" id="lemail" name="email" placeholder="seu@email.com" autocomplete="username">
@@ -1085,7 +1085,7 @@ function aplicarSessao(u) {
 }
 
 // ===== RESTAURAR SESSÃO AO CARREGAR (F5) =====
-(function() {
+window.addEventListener('load', function() {
   try {
     var s = localStorage.getItem('tucic_sessao');
     if (!s) return;
@@ -1093,14 +1093,11 @@ function aplicarSessao(u) {
     if (!saved || !saved.email) { localStorage.removeItem('tucic_sessao'); return; }
     var uReal = USERS[saved.email];
     if (!uReal) { localStorage.removeItem('tucic_sessao'); return; }
-    // Aguardar DOM estar pronto
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() { aplicarSessao(uReal); });
-    } else {
-      aplicarSessao(uReal);
-    }
-  } catch(e) { localStorage.removeItem('tucic_sessao'); }
-})();
+    aplicarSessao(uReal);
+  } catch(e) {
+    localStorage.removeItem('tucic_sessao');
+  }
+});
 
 function doLogin(){
   var email=document.getElementById('lemail').value.trim().toLowerCase();
