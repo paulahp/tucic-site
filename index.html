@@ -1291,179 +1291,16 @@ select.finput{cursor:pointer;}
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 // ==============================
-// GOOGLE CALENDAR
+// MODO EDIÇÃO / INIT PDFJS
 // ==============================
-function gcalLink(titulo, dataStr, descricao) {
-  var p = dataStr.split('-');
-  if(p.length !== 3) { p = dataStr.split('/').reverse(); }
-  var dt = p[0] + (p[1].length===1?'0':'') + p[1] + (p[2].length===1?'0':'') + p[2];
-  // Dia seguinte para fim do evento (dia inteiro)
-  var dObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2])+1);
-  var dtEnd = dObj.getFullYear() + String(dObj.getMonth()+1).padStart(2,'0') + String(dObj.getDate()).padStart(2,'0');
-  var details = (descricao||'') + '\n\nTerreiro TUCIC — Tenda de Umbanda Cabocla Inaê das Cachoeiras, Florianópolis/SC.\n⚠️ Lembre-se do preceito 24h antes das giras!';
-  var params = 'action=TEMPLATE'
-    + '&text=' + encodeURIComponent(titulo + ' — TUCIC')
-    + '&dates=' + dt + '/' + dtEnd
-    + '&details=' + encodeURIComponent(details)
-    + '&location=' + encodeURIComponent('TUCIC - Tenda de Umbanda Cabocla Inaê das Cachoeiras, Florianópolis/SC')
-    + '&sf=true&output=xml';
-  return 'https://calendar.google.com/calendar/render?' + params;
-}
-
-function exportarTodosGcal() {
-  var todos = todosEvs();
-  var linhas = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//TUCIC//Portal dos Membros//PT',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'X-WR-CALNAME:TUCIC 2026',
-    'X-WR-TIMEZONE:America/Sao_Paulo'
-  ];
-  todos.forEach(function(ev) {
-    var p = ev.d.split('-');
-    var dt = p[0]+p[1]+p[2];
-    var dObj = new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);
-    var dtEnd = dObj.getFullYear()+String(dObj.getMonth()+1).padStart(2,'0')+String(dObj.getDate()).padStart(2,'0');
-    var uid = ev.d.replace(/-/g,'')+'-'+Math.abs(ev.t.split('').reduce(function(a,c){return(a<<5)-a+c.charCodeAt(0)|0;},0))+'@tucic';
-    var desc = (ev.det||'') + '\nTipo: '+ev.tp+'\nTUCIC - Florianópolis/SC';
-    if(ev.tp==='gira'||ev.tp==='hom') desc += '\n⚠️ Preceito obrigatório 24h antes!';
-    linhas.push('BEGIN:VEVENT','DTSTART;VALUE=DATE:'+dt,'DTEND;VALUE=DATE:'+dtEnd,
-      'SUMMARY:'+ev.t+' — TUCIC','DESCRIPTION:'+desc.replace(/\n/g,'\\n'),
-      'LOCATION:TUCIC - Tenda de Umbanda Cabocla Inaê das Cachoeiras\, Florianópolis/SC',
-      'UID:'+uid,'END:VEVENT');
-  });
-  linhas.push('END:VCALENDAR');
-  var blob = new Blob([linhas.join('\r\n')],{type:'text/calendar;charset=utf-8'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');a.href=url;a.download='TUCIC_2026.ics';a.click();
-  URL.revokeObjectURL(url);
-}
-
-
-// ==============================
-// SIDEBAR COLAPSÁVEL (NOTION-STYLE)
-// ==============================
-function toggleGroup(header) {
-  header.classList.toggle('open');
-  var children = header.nextElementSibling;
-  if (children && children.classList.contains('nav-children')) {
-    children.classList.toggle('open');
-  }
-}
-
-// Override adicionarAoMenu — agora vai para #nav-custom-pages dentro do Manual
-function adicionarAoMenu(titulo, icone, idx) {
-  var container = document.getElementById('nav-custom-pages');
-  if (!container) return;
-
-  // Garantir que o grupo Manual do Médium esteja aberto
-  var manualHeader = container.closest('.nav-children');
-  if (manualHeader) {
-    manualHeader.classList.add('open');
-    var grpHeader = manualHeader.previousElementSibling;
-    if (grpHeader) grpHeader.classList.add('open');
-  }
-
-  renderNavCustomPages();
-}
-
-function renderNavCustomPages() {
-  var container = document.getElementById('nav-custom-pages');
-  if (!container) return;
-  container.innerHTML = paginas.map(function(p, i) {
-    return '<div class="nav-page-item" id="nav-pg-' + i + '" onclick="verPagina(' + i + ', this)">'
-      + '<span style="font-size:13px;">' + p.icone + '</span>'
-      + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + p.titulo + '</span>'
-      + (isAdmin ? '<span class="page-actions-mini">'
-          + '<button class="mini-btn" onclick="event.stopPropagation();renomearPagina(' + i + ')" title="Renomear">✏️</button>'
-          + '<button class="mini-btn" onclick="event.stopPropagation();moverPagina(' + i + ',-1)" title="Mover para cima">↑</button>'
-          + '<button class="mini-btn" onclick="event.stopPropagation();moverPagina(' + i + ',1)" title="Mover para baixo">↓</button>'
-          + '<button class="mini-btn" onclick="event.stopPropagation();deletarPaginaSidebar(' + i + ')" title="Excluir">✕</button>'
-          + '</span>' : '')
-      + '</div>';
-  }).join('');
-}
-
-function renomearPagina(i) {
-  document.getElementById('rename-titulo').value = paginas[i].titulo;
-  document.getElementById('rename-icone').value = paginas[i].icone;
-  document.getElementById('rename-idx').value = i;
-  document.getElementById('rename-modal').classList.add('open');
-}
-
-function salvarRename() {
-  var i = parseInt(document.getElementById('rename-idx').value);
-  paginas[i].titulo = document.getElementById('rename-titulo').value.trim() || paginas[i].titulo;
-  paginas[i].icone = document.getElementById('rename-icone').value || paginas[i].icone;
-  document.getElementById('rename-modal').classList.remove('open');
-  renderNavCustomPages();
-  renderPaginas();
-  // Atualizar título da seção se estiver aberta
-  var secEl = document.getElementById('sec-pg-' + i);
-  if (secEl) {
-    var phEl = secEl.querySelector('.ph');
-    if (phEl) phEl.textContent = paginas[i].icone + ' ' + paginas[i].titulo;
-  }
-}
-
-function moverPagina(i, dir) {
-  var j = i + dir;
-  if (j < 0 || j >= paginas.length) return;
-  var tmp = paginas[i]; paginas[i] = paginas[j]; paginas[j] = tmp;
-  renderNavCustomPages();
-  renderPaginas();
-}
-
-function deletarPaginaSidebar(i) {
-  if (confirm('Excluir a página "' + paginas[i].titulo + '"?')) {
-    paginas.splice(i, 1);
-    renderNavCustomPages();
-    renderPaginas();
-    // Voltar para início se estava nessa página
-    sec('inicio', document.getElementById('nav-inicio'));
-  }
-}
-
-// Override verPagina para atualizar estado ativo na sidebar
-var _verPaginaOrig = typeof verPagina === 'function' ? verPagina : null;
-function verPagina(i, navEl) {
-  var p = paginas[i];
-  if (!p) return;
-  var id = 'sec-pg-' + i;
-  if (!document.getElementById(id)) {
-    var nova = document.createElement('div');
-    nova.id = id;
-    nova.className = 'sec';
-    nova.innerHTML = '<div class="ph">' + p.icone + ' ' + p.titulo + '</div>'
-      + '<div class="ps">Criada em ' + p.data + '</div>'
-      + '<div style="font-size:14px;line-height:1.8;color:#374151;" id="pg-content-' + i + '">' + p.conteudo + '</div>';
-    document.querySelector('.main').appendChild(nova);
-  }
-  // Atualizar active na sidebar
-  document.querySelectorAll('.ni, .nav-page-item').forEach(function(n) { n.classList.remove('active'); });
-  var navItem = document.getElementById('nav-pg-' + i);
-  if (navItem) navItem.classList.add('active');
-  // Garantir grupo Manual aberto
-  var container = document.getElementById('nav-custom-pages');
-  if (container) {
-    var children = container.closest('.nav-children');
-    if (children) {
-      children.classList.add('open');
-      var hdr = children.previousElementSibling;
-      if (hdr) hdr.classList.add('open');
-    }
-  }
-  sec('pg-' + i, null);
-  // Scroll main to top
-  var m = document.querySelector('.main'); if (m) m.scrollTop = 0;
-}
-
 </script>
+
 <script>
 if(typeof pdfjsLib!=='undefined')pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+// ==============================
+// DADOS DO TERREIRO
+// ==============================
 var USERS={'admin@tucic.com':{pass:'tucic2024',name:'Mãe Rosi de Oxum',role:'ADMINISTRADORA',ini:'MR',admin:true},'membro@tucic.com':{pass:'tucic2024',name:'Membro TUCIC',role:'MEMBRO',ini:'MT',admin:false}};
 var ORIXAS=[{n:'Oxalá',s:'Êbaba · Êpa Baba',cor:'#94A3B8',sig:'O senhor realiza · Obrigado Pai'},{n:'Ogum',s:'Patacori Ogum · Ogunhê',cor:'#DC2626',sig:'Salve o cortador de caminhos'},{n:'Xangô',s:'Caô Cabesilê',cor:'#92400E',sig:'Permita-me vê-lo, Majestade'},{n:'Oxóssi',s:'Okê Arô Oxóssi',cor:'#15803D',sig:'Dê seu brado, Majestade'},{n:'Obaluaê/Omulu',s:'Atotô',cor:'#334155',sig:'Silêncio, ele está entre nós'},{n:'Iemanjá',s:'Odôcy Iabá',cor:'#0EA5E9',sig:'Salve a Senhora das Águas'},{n:'Oxum',s:'Ora ie ie Oxum',cor:'#1D4ED8',sig:'Olha por nós mãezinha'},{n:'Iansã',s:'Eparrei Oiá',cor:'#CA8A04',sig:'Salve o raio, Iansã'},{n:'Nanã',s:'Saluba Nanã',cor:'#7C3AED',sig:'Salve a Mãe de todas as Mães'},{n:'Ibeji',s:'Omi Ibejada',cor:'#EC4899',sig:'Ele é dois'},{n:'Oba',s:'Oba Xirê',cor:'#BE123C',sig:'Eu saúdo o seu conhecimento'}];
 var GIRAS_D=[{num:'1ª',n:"Povo d'Água — Marinheiros",tipo:'Descarrego',desc:"Entidades muito elevadas. Chegam girando, limpando com águas e vento. Não fazem consultas."},{num:'2ª',n:'Pombagira',tipo:'Consultas',desc:'Consultas e trabalhos de magia — vida sentimental, emprego, finanças.'},{num:'3ª',n:'Xangô — Ibejada',tipo:'Descarrego + Consultas',desc:'Xangô: juízes espirituais, trabalham no carma. Ibejada: para casos de doença, família e gravidez.'},{num:'4ª',n:'Boiadeiros',tipo:'Consultas',desc:'Evolução material e espiritual. Magias com palheiro, cachaça, cerveja e velas.'},{num:'5ª',n:'Ciganos',tipo:'Consultas',desc:'Sorte, dinheiro, prosperidade e amor. Cartas, cristais, incensos, fumo e flores.'},{num:'6ª',n:'Exu',tipo:'Consultas',desc:'Defesa dos médiuns e do terreiro. Velas pretas e vermelhas, charutos, bebidas fortes.'},{num:'7ª',n:'Obaluaê/Omulu — Baianos',tipo:'Descarrego + Consultas',desc:'Omulu: energia da terra/água para saúde. Baianos: atendimentos de consulta.'},{num:'8ª',n:'Oxóssi',tipo:'Descarrego + Consultas',desc:'Charutos para limpeza, Curiado. Ajudam na vida material.'},{num:'9ª',n:'Ogum — Malandros',tipo:'Descarrego',desc:'Braço forte de Oxalá. Não dão consultas. Charuto, cerveja, espada ou ervas.'},{num:'10ª',n:'Pretos Velhos',tipo:'Consultas',desc:'Psicólogos dos aflitos. Cachimbo para limpeza, rezas, patuás.'}];
@@ -1474,55 +1311,96 @@ var EVENTOS_BASE=[{d:'2026-01-09',t:'Início Recolhida 7 Linhas',tp:'outros'},{d
 var FIRMEZAS=[{d:'2026-02-05',g:4},{d:'2026-02-12',g:5},{d:'2026-02-19',g:6},{d:'2026-02-26',g:1},{d:'2026-03-05',g:2},{d:'2026-03-12',g:3},{d:'2026-03-19',g:4},{d:'2026-03-26',g:5},{d:'2026-04-02',g:6},{d:'2026-04-09',g:1},{d:'2026-04-16',g:2},{d:'2026-04-23',g:3},{d:'2026-04-30',g:4},{d:'2026-05-07',g:5},{d:'2026-05-14',g:6},{d:'2026-05-21',g:1},{d:'2026-05-28',g:2},{d:'2026-06-04',g:3},{d:'2026-06-11',g:4},{d:'2026-06-18',g:5},{d:'2026-06-25',g:6},{d:'2026-07-02',g:1},{d:'2026-07-09',g:2},{d:'2026-07-16',g:3},{d:'2026-07-23',g:4},{d:'2026-07-30',g:5},{d:'2026-08-06',g:6},{d:'2026-08-13',g:1},{d:'2026-08-20',g:2},{d:'2026-08-27',g:3},{d:'2026-09-03',g:4},{d:'2026-09-10',g:5},{d:'2026-09-17',g:6},{d:'2026-09-24',g:1},{d:'2026-10-01',g:2},{d:'2026-10-08',g:3},{d:'2026-10-15',g:4},{d:'2026-10-22',g:5},{d:'2026-10-29',g:6},{d:'2026-11-05',g:1},{d:'2026-11-12',g:2},{d:'2026-11-19',g:3},{d:'2026-11-26',g:4},{d:'2026-12-03',g:5},{d:'2026-12-10',g:6}];
 var FUNCOES=[{d:'2026-01-21',gira:'Gira de Desenvolvimento & Amaci',abertura:'Ana Paula',def:'Mateus',auxDef:'Mãe P. Vitória'},{d:'2026-01-23',gira:"Povo d'Água & Marinheiro",abertura:'Ana Paula',def:'Mateus',auxDef:'Mãe P. Vitória'},{d:'2026-01-30',gira:'Ogum & Malandros',abertura:'Mateus',def:'Mãe P. Vitória',auxDef:'Maylla'},{d:'2026-02-06',gira:'Pretos Velhos',abertura:'Mãe P. Vitória',def:'Maylla',auxDef:'Emanoelle'},{d:'2026-02-13',gira:'Pombagira',abertura:'Maylla',def:'Emanoelle',auxDef:'Mãe P. Paula'},{d:'2026-02-20',gira:'Xangô & Ibejada',abertura:'Emanoelle',def:'Mãe P. Paula',auxDef:'Fê Boanova'},{d:'2026-02-27',gira:'Boiadeiro',abertura:'Mãe P. Paula',def:'Fê Boanova',auxDef:'Monica'},{d:'2026-03-02',gira:'Gira de Cura',abertura:'Juliana',def:'Evandro',auxDef:'Karen'},{d:'2026-03-06',gira:'Ciganos',abertura:'Fê Boanova',def:'Monica',auxDef:'Mãe P. Geysa'},{d:'2026-03-13',gira:'Exu',abertura:'Monica',def:'Mãe P. Geysa',auxDef:'Sthefany'},{d:'2026-03-20',gira:'Obaluaê/Omulu & Baianos',abertura:'Mãe P. Geysa',def:'Sthefany',auxDef:'Pai P. Henrique'},{d:'2026-03-27',gira:'Oxóssi',abertura:'Sthefany',def:'Pai P. Henrique',auxDef:'Douglas'},{d:'2026-04-03',gira:'Pretos Velhos',abertura:'Pai P. Henrique',def:'Douglas',auxDef:'Pai P. Luciano'},{d:'2026-04-10',gira:"Povo d'Água & Marinheiro",abertura:'Douglas',def:'Pai P. Luciano',auxDef:'Jéssica'},{d:'2026-04-17',gira:'Xangô & Ibejada',abertura:'Pai P. Luciano',def:'Jéssica',auxDef:'Mateus'},{d:'2026-04-24',gira:'Homenagem Ogum & Malandros',abertura:'Jéssica',def:'Mateus',auxDef:'Mãe P. Terezinha'}];
 
-var calAtual={ano:2026,mes:2};
-var calFiltroAtual='all';
-var eventosCustom=[];
-var paginas=[];
-var paginaEditando=null;
-var modoEdicao=false;
-var isAdmin=false;
-var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-var DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
-// ===== NAVEGAÇÃO =====
-function showView(id){
-  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-  var el = document.getElementById(id);
-  if(el) el.classList.add('active');
-}
-function sec(id,el){
-  document.querySelectorAll('.sec').forEach(function(s){s.classList.remove('active');});
-  document.querySelectorAll('.ni').forEach(function(n){n.classList.remove('active');});
-  var s=document.getElementById('sec-'+id);if(s)s.classList.add('active');
-  if(el)el.classList.add('active');
-  var m=document.getElementById('main-area');if(m)m.scrollTop=0;
-  // Se em modo edição, re-ativar editáveis na nova seção
-  if(modoEdicao)ativarEditaveis();
-}
-function tab(g,id,el){
-  var p=g+'-';
-  document.querySelectorAll('[id^="'+p+'"]').forEach(function(t){if(t.classList.contains('tc'))t.classList.remove('active');});
-  var t=document.getElementById(p+id);if(t)t.classList.add('active');
-  if(el){el.closest('.tabs').querySelectorAll('.tab').forEach(function(tb){tb.classList.remove('active');});el.classList.add('active');}
-}
 
-// ===== AUTH =====
+// ==============================
+// ESTADO GLOBAL
+// ==============================
+var modoEdicao = false;
+var isAdmin = false;
+var built = false;
+var paginas = [];
+var paginaEditando = null;
+var eventosCustom = [];
+var calAtual = {ano:2026, mes:2};
+var calFiltroAtual = 'all';
+var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var DIAS  = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+// ==============================
+// SESSÃO / AUTH
+// ==============================
 function aplicarSessao(u) {
-  document.getElementById('sb-av').textContent = u.ini;
-  document.getElementById('sb-name').textContent = u.name;
-  document.getElementById('sb-role').textContent = u.role;
-  document.getElementById('header-user').textContent = u.name;
-  document.getElementById('btn-sair').style.display = 'block';
+  var sbAv = document.getElementById('sb-av');
+  if (sbAv) {
+    var ini = document.getElementById('sb-av-ini');
+    sbAv.style.background = 'var(--azul)';
+    if (ini) ini.textContent = u.ini;
+  }
+  var sbName = document.getElementById('sb-name');
+  if (sbName) sbName.textContent = u.name;
+  var sbRole = document.getElementById('sb-role');
+  if (sbRole) sbRole.textContent = u.role;
+  var hdrUser = document.getElementById('header-user');
+  if (hdrUser) hdrUser.textContent = u.name;
+  var hdrAv = document.getElementById('hdr-avatar');
+  if (hdrAv) hdrAv.textContent = u.ini ? u.ini.charAt(0) : '';
+  var btnSair = document.getElementById('btn-sair');
+  if (btnSair) btnSair.style.display = 'block';
   if (u.admin) {
     isAdmin = true;
-    document.getElementById('adm-nav').style.display = 'block';
-    document.getElementById('edit-fab').classList.add('show');
+    var admNav = document.getElementById('adm-nav');
+    if (admNav) admNav.style.display = 'block';
+    var fab = document.getElementById('edit-fab');
+    if (fab) fab.classList.add('show');
   }
   showView('v-dash');
   buildAll();
+  // Restaurar foto
+  setTimeout(function() {
+    var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
+    var foto = sessao.email ? localStorage.getItem('tucic_foto_' + sessao.email) : null;
+    if (foto) atualizarAvatars(foto, u.ini);
+  }, 50);
 }
 
-// ===== RESTAURAR SESSÃO AO CARREGAR (F5) =====
+function doLogin() {
+  var email = document.getElementById('lemail').value.trim().toLowerCase();
+  var senha = document.getElementById('lsenha').value;
+  var err = document.getElementById('err');
+  var u = USERS[email];
+  if (u && u.pass === senha) {
+    err.style.display = 'none';
+    localStorage.setItem('tucic_sessao', JSON.stringify({
+      email: email, name: u.name, role: u.role, ini: u.ini, admin: u.admin
+    }));
+    aplicarSessao(u);
+  } else {
+    err.textContent = 'E-mail ou senha incorretos.';
+    err.style.display = 'block';
+  }
+}
+
+function logout() {
+  modoEdicao = false;
+  isAdmin = false;
+  localStorage.removeItem('tucic_sessao');
+  var btnSair = document.getElementById('btn-sair');
+  if (btnSair) btnSair.style.display = 'none';
+  var hdrUser = document.getElementById('header-user');
+  if (hdrUser) hdrUser.textContent = '';
+  var admNav = document.getElementById('adm-nav');
+  if (admNav) admNav.style.display = 'none';
+  var fab = document.getElementById('edit-fab');
+  if (fab) fab.classList.remove('show');
+  var lemail = document.getElementById('lemail');
+  if (lemail) lemail.value = '';
+  var lsenha = document.getElementById('lsenha');
+  if (lsenha) lsenha.value = '';
+  showView('v-login');
+}
+
+// Restaurar sessão ao carregar (F5)
 window.addEventListener('load', function() {
   try {
     var s = localStorage.getItem('tucic_sessao');
@@ -1532,1311 +1410,714 @@ window.addEventListener('load', function() {
     var uReal = USERS[saved.email];
     if (!uReal) { localStorage.removeItem('tucic_sessao'); return; }
     aplicarSessao(uReal);
-  } catch(e) {
-    localStorage.removeItem('tucic_sessao');
-  }
+  } catch(e) { localStorage.removeItem('tucic_sessao'); }
 });
 
-function doLogin(){
-  var email=document.getElementById('lemail').value.trim().toLowerCase();
-  var senha=document.getElementById('lsenha').value;
-  var err=document.getElementById('err');
-  var u=USERS[email];
-  if(u&&u.pass===senha){
-    err.style.display='none';
-    // Salvar sessão no localStorage (persiste ao F5)
-    localStorage.setItem('tucic_sessao', JSON.stringify({email:email, name:u.name, role:u.role, ini:u.ini, admin:u.admin}));
-    aplicarSessao(u);
-  }else{
-    err.textContent='E-mail ou senha incorretos.';
-    err.style.display='block';
+// ==============================
+// NAVEGAÇÃO
+// ==============================
+function showView(id) {
+  document.querySelectorAll('.view').forEach(function(v) { v.classList.remove('active'); });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function sec(id, el) {
+  document.querySelectorAll('.sec').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.ni, .nav-page-item').forEach(function(n) { n.classList.remove('active'); });
+  var s = document.getElementById('sec-' + id);
+  if (s) s.classList.add('active');
+  if (el) el.classList.add('active');
+  var m = document.querySelector('.main');
+  if (m) m.scrollTop = 0;
+  // Callbacks por seção
+  if (id === 'admin-membros') setTimeout(renderMembros, 50);
+  if (id === 'meu-cadastro')  setTimeout(preCarregarCadastro, 50);
+}
+
+function tab(g, id, el) {
+  var p = g + '-';
+  document.querySelectorAll('[id^="' + p + '"]').forEach(function(t) {
+    if (t.classList.contains('tc')) t.classList.remove('active');
+  });
+  var t = document.getElementById(p + id);
+  if (t) t.classList.add('active');
+  if (el) {
+    el.closest('.tabs').querySelectorAll('.tab').forEach(function(tb) { tb.classList.remove('active'); });
+    el.classList.add('active');
   }
 }
-function logout(){
-  modoEdicao=false;
-  localStorage.removeItem('tucic_sessao');
-  isAdmin=false;
-  document.getElementById('btn-sair').style.display='none';
-  document.getElementById('header-user').textContent='';
-  document.getElementById('adm-nav').style.display='none';
-  document.getElementById('edit-fab').classList.remove('show');
-  document.getElementById('lemail').value='';
-  document.getElementById('lsenha').value='';
-  showView('v-login');
-}
-document.addEventListener('keydown',function(e){
-  if(e.key==='Enter'){
-    var vl=document.getElementById('v-login');
-    if(vl&&vl.style.display==='flex')doLogin();
-  }
-});
 
-// ===== EDIÇÃO INLINE =====
-function ativarEditaveis(){
-  var sels='.sec.active .ph,.sec.active .ps,.sec.active .rt,.sec.active .rm,.sec.active .rb,.sec.active .gt,.sec.active .gd,.sec.active .lt,.sec.active .avt,.sec.active .avb,.sec.active .st,.sec.active .ebo,.sec.active .en,.sec.active .mv,.sec.active .ml';
-  document.querySelectorAll(sels).forEach(function(el){
-    el.setAttribute('contenteditable','true');
-    el.style.outline='none';
-    el.style.cursor='text';
-  });
+function toggleGroup(header) {
+  header.classList.toggle('open');
+  var ch = header.nextElementSibling;
+  if (ch && ch.classList.contains('nav-children')) ch.classList.toggle('open');
 }
-function removerEditaveis(){
-  document.querySelectorAll('[contenteditable]').forEach(function(el){
-    if(el.id!=='editor'){
-      el.removeAttribute('contenteditable');
-      el.style.cursor='';
-    }
-  });
-}
-function ativarEdicao(){
-  modoEdicao=true;
-  document.getElementById('main-area').classList.add('editing');
-  document.getElementById('fab-edit').style.display='none';
-  document.getElementById('fab-save').classList.add('vis');
-  document.getElementById('fab-cancel').classList.add('vis');
-  document.getElementById('editing-bar').classList.add('show');
-  document.getElementById('edit-info').classList.add('show');
-  ativarEditaveis();
-}
-function salvarEdicao(){
-  modoEdicao=false;
-  document.getElementById('main-area').classList.remove('editing');
-  document.getElementById('fab-edit').style.display='flex';
-  document.getElementById('fab-save').classList.remove('vis');
-  document.getElementById('fab-cancel').classList.remove('vis');
-  document.getElementById('editing-bar').classList.remove('show');
-  document.getElementById('edit-info').classList.remove('show');
-  removerEditaveis();
-  var fb=document.getElementById('save-feedback');
-  fb.style.display='block';
-  setTimeout(function(){fb.style.display='none';},2500);
-}
-function cancelarEdicao(){
-  modoEdicao=false;
-  document.getElementById('main-area').classList.remove('editing');
-  document.getElementById('fab-edit').style.display='flex';
-  document.getElementById('fab-save').classList.remove('vis');
-  document.getElementById('fab-cancel').classList.remove('vis');
-  document.getElementById('editing-bar').classList.remove('show');
-  document.getElementById('edit-info').classList.remove('show');
-  removerEditaveis();
-}
-function fmtI(cmd){document.execCommand(cmd,false,null);}
-function fmtBI(tag){document.execCommand('formatBlock',false,'<'+tag+'>');}
 
-// ===== BUILD =====
-var built=false;
-function buildAll(){
-  if(built)return;built=true;
-  var og=document.getElementById('og');
-  ORIXAS.forEach(function(o){
-    var d=document.createElement('div');d.className='oc';
-    d.innerHTML='<span class="odot" style="background:'+o.cor+'"></span><div class="on">'+o.n+'</div><div class="os2">'+o.s+'</div>';
-    d.onclick=function(){
-      var det=document.getElementById('odet');
-      det.innerHTML='<div class="rc"><div class="rt">'+o.n+'</div><div class="rm">Saudação · Significado</div><div style="margin-bottom:8px;"><span class="odot" style="background:'+o.cor+';display:inline-block;"></span><strong style="color:var(--azul);font-size:14px;margin-left:5px;">'+o.s+'</strong></div><div class="rb">'+o.sig+'</div></div>';
-      det.style.display='block';
+// ==============================
+// BUILD ESTÁTICO (UMA VEZ)
+// ==============================
+function buildAll() {
+  if (built) return;
+  built = true;
+  // Orixás
+  var og = document.getElementById('og');
+  if (og) ORIXAS.forEach(function(o) {
+    var d = document.createElement('div'); d.className = 'oc';
+    d.innerHTML = '<span class="odot" style="background:'+o.cor+'"></span><div class="on">'+o.n+'</div><div class="os2">'+o.s+'</div>';
+    d.onclick = function() {
+      var det = document.getElementById('odet');
+      det.innerHTML = '<div class="rc"><div class="rt">'+o.n+'</div><div class="rm">Saudação · Significado</div><div style="margin-bottom:8px;"><span class="odot" style="background:'+o.cor+';display:inline-block;"></span><strong style="color:var(--azul);font-size:14px;margin-left:5px;">'+o.s+'</strong></div><div class="rb">'+o.sig+'</div></div>';
+      det.style.display = 'block';
     };
     og.appendChild(d);
   });
-  var gs=document.getElementById('gr-seq'),gf=document.getElementById('gr-fund');
-  GIRAS_D.forEach(function(g){
-    gs.innerHTML+='<div class="gi"><div class="gn2">'+g.num+' GIRA</div><div class="gt">'+g.n+'</div><div style="margin-top:6px;"><span class="badge badge-azul">'+g.tipo+'</span></div></div>';
-    gf.innerHTML+='<div class="gi"><div class="gn2">'+g.num+' · '+g.tipo.toUpperCase()+'</div><div class="gt">'+g.n+'</div><div class="gd">'+g.desc+'</div></div>';
+  // Giras
+  var gs = document.getElementById('gr-seq'), gf = document.getElementById('gr-fund');
+  if (gs) GIRAS_D.forEach(function(g) {
+    gs.innerHTML += '<div class="gi"><div class="gn2">'+g.num+' GIRA</div><div class="gt">'+g.n+'</div><div style="margin-top:6px;"><span class="badge badge-azul">'+g.tipo+'</span></div></div>';
+    gf.innerHTML += '<div class="gi"><div class="gn2">'+g.num+' · '+g.tipo.toUpperCase()+'</div><div class="gt">'+g.n+'</div><div class="gd">'+g.desc+'</div></div>';
   });
-  var lt=document.getElementById('ln-trab'),ls=document.getElementById('ln-sete');
-  LINHAS_D.forEach(function(l){lt.innerHTML+='<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:13.5px;font-weight:700;color:var(--texto);margin-bottom:2px;">'+l.n+'</div><div class="lt">'+l.d+'</div></div></div>';});
-  SETE_D.forEach(function(l){ls.innerHTML+='<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:13.5px;font-weight:700;color:var(--texto);">'+l.n+' <span style="font-size:11px;color:var(--muted);">'+l.o+'</span></div><div class="lt"><strong style="color:var(--azul);">'+l.v+'</strong> — '+l.d+'</div></div></div>';});
+  // Linhas
+  var lt = document.getElementById('ln-trab'), ls = document.getElementById('ln-sete');
+  if (lt) LINHAS_D.forEach(function(l) {
+    lt.innerHTML += '<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:13.5px;font-weight:700;color:var(--texto);margin-bottom:2px;">'+l.n+'</div><div class="lt">'+l.d+'</div></div></div>';
+  });
+  if (ls) SETE_D.forEach(function(l) {
+    ls.innerHTML += '<div class="li"><div class="ld" style="background:'+l.c+'"></div><div><div style="font-size:13.5px;font-weight:700;color:var(--texto);">'+l.n+' <span style="font-size:11px;color:var(--muted);font-weight:400;">'+l.o+'</span></div><div class="lt"><strong style="color:var(--azul);">'+l.v+'</strong> — '+l.d+'</div></div></div>';
+  });
   renderCalendario();
   buildFirmezas();
   buildFuncoes();
   renderPaginas();
 }
 
-// ===== CALENDÁRIO =====
-function pad(n){return n<10?'0'+n:''+n;}
-function todosEvs(){var t=EVENTOS_BASE.slice();FIRMEZAS.forEach(function(f){t.push({d:f.d,t:'Firmeza — Grupo '+f.g,tp:'firmeza'});});eventosCustom.forEach(function(e){t.push(e);});return t;}
-function calMes(d){calAtual.mes+=d;if(calAtual.mes>11){calAtual.mes=0;calAtual.ano++;}if(calAtual.mes<0){calAtual.mes=11;calAtual.ano--;}renderCalendario();}
-function calFiltro(tp,btn){calFiltroAtual=tp;document.querySelectorAll('.cf-btn').forEach(function(b){b.classList.remove('on');});if(btn)btn.classList.add('on');renderCalendario();}
-function renderCalendario(){
-  var tt=document.getElementById('cal-month-title');if(!tt)return;
-  tt.textContent=MESES[calAtual.mes]+' '+calAtual.ano;
-  var grid=document.getElementById('cal-grid');grid.innerHTML='';
-  DIAS.forEach(function(d){var el=document.createElement('div');el.className='cal-day-name';el.textContent=d;grid.appendChild(el);});
-  var prim=new Date(calAtual.ano,calAtual.mes,1).getDay();
-  var dim=new Date(calAtual.ano,calAtual.mes+1,0).getDate();
-  var dprev=new Date(calAtual.ano,calAtual.mes,0).getDate();
-  var hoje=new Date();var todos=todosEvs();
-  for(var i=prim-1;i>=0;i--){var d=document.createElement('div');d.className='cal-day other-month';d.innerHTML='<div class="cal-day-num">'+(dprev-i)+'</div>';grid.appendChild(d);}
-  for(var day=1;day<=dim;day++){
-    var d=document.createElement('div');d.className='cal-day';
-    var ds=calAtual.ano+'-'+pad(calAtual.mes+1)+'-'+pad(day);
-    if(hoje.getFullYear()===calAtual.ano&&hoje.getMonth()===calAtual.mes&&hoje.getDate()===day)d.classList.add('today');
-    d.innerHTML='<div class="cal-day-num">'+day+'</div>';
-    var evs=todos.filter(function(e){return e.d===ds;});
-    var evsFilt=calFiltroAtual==='all'?evs:evs.filter(function(e){return e.tp===calFiltroAtual;});
-    evsFilt.slice(0,3).forEach(function(ev){var el=document.createElement('div');el.className='cal-event ev-'+ev.tp;el.textContent=ev.t;d.appendChild(el);});
-    if(evsFilt.length>3){var m=document.createElement('div');m.className='cal-more';m.textContent='+'+(evsFilt.length-3)+' mais';d.appendChild(m);}
-    if(evsFilt.length>0){d.classList.add('has-ev');(function(evList,label,ds2){d.onclick=function(){
-      document.getElementById('modal-ev-titulo').textContent=label;
-      document.getElementById('modal-ev-data').textContent=ds2.split('-').reverse().join('/');
-      document.getElementById('modal-ev-corpo').innerHTML=evList.map(function(ev){
-        var cores={gira:'#DBEAFE|#1E40AF',hom:'#EDE9FE|#6D28D9',curso:'#D1FAE5|#065F46',firmeza:'#FEF3C7|#92400E',outros:'#F3F4F6|#6B7280'};
-        var c=(cores[ev.tp]||'#F3F4F6|#6B7280').split('|');
-        var gurl=gcalLink(ev.t, ds2, ev.det||'');
-        return '<div style="padding:12px;background:'+c[0]+';border-radius:8px;margin-bottom:8px;"><div style="font-size:10px;font-weight:700;color:'+c[1]+';text-transform:uppercase;margin-bottom:4px;">'+ev.tp+'</div><div style="font-size:14px;font-weight:700;color:var(--texto);">'+ev.t+'</div>'+(ev.det?'<div style="font-size:12.5px;color:var(--muted);margin-top:5px;">'+ev.det+'</div>':'')+'<a href="'+gurl+'" target="_blank" class="btn-gcal">📅 Adicionar ao Google Calendar</a></div>';
-      }).join('');
-      document.getElementById('modal-ev').classList.add('open');
-    };})(evsFilt,day+' de '+MESES[calAtual.mes],ds);}
+// ==============================
+// CALENDÁRIO
+// ==============================
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function todosEvs() {
+  var t = EVENTOS_BASE.slice();
+  FIRMEZAS.forEach(function(f) { t.push({d:f.d, t:'Firmeza — Grupo '+f.g, tp:'firmeza'}); });
+  eventosCustom.forEach(function(e) { t.push(e); });
+  return t;
+}
+function calMes(d) {
+  calAtual.mes += d;
+  if (calAtual.mes > 11) { calAtual.mes = 0; calAtual.ano++; }
+  if (calAtual.mes < 0)  { calAtual.mes = 11; calAtual.ano--; }
+  renderCalendario();
+}
+function calFiltro(tp, btn) {
+  calFiltroAtual = tp;
+  document.querySelectorAll('.cf-btn').forEach(function(b) { b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  renderCalendario();
+}
+function renderCalendario() {
+  var tt = document.getElementById('cal-month-title'); if (!tt) return;
+  tt.textContent = MESES[calAtual.mes] + ' ' + calAtual.ano;
+  var grid = document.getElementById('cal-grid'); grid.innerHTML = '';
+  DIAS.forEach(function(d) { var el = document.createElement('div'); el.className='cal-day-name'; el.textContent=d; grid.appendChild(el); });
+  var prim = new Date(calAtual.ano, calAtual.mes, 1).getDay();
+  var dim  = new Date(calAtual.ano, calAtual.mes+1, 0).getDate();
+  var dprev= new Date(calAtual.ano, calAtual.mes, 0).getDate();
+  var hoje = new Date();
+  var todos = todosEvs();
+  for (var i = prim-1; i >= 0; i--) {
+    var d = document.createElement('div'); d.className='cal-day other-month';
+    d.innerHTML = '<div class="cal-day-num">'+(dprev-i)+'</div>'; grid.appendChild(d);
+  }
+  for (var day = 1; day <= dim; day++) {
+    var d = document.createElement('div'); d.className = 'cal-day';
+    var ds = calAtual.ano+'-'+pad(calAtual.mes+1)+'-'+pad(day);
+    if (hoje.getFullYear()===calAtual.ano && hoje.getMonth()===calAtual.mes && hoje.getDate()===day) d.classList.add('today');
+    d.innerHTML = '<div class="cal-day-num">'+day+'</div>';
+    var evs = todos.filter(function(e) { return e.d===ds; });
+    var evsFilt = calFiltroAtual==='all' ? evs : evs.filter(function(e) { return e.tp===calFiltroAtual; });
+    evsFilt.slice(0,3).forEach(function(ev) {
+      var el = document.createElement('div'); el.className='cal-event ev-'+ev.tp; el.textContent=ev.t; d.appendChild(el);
+    });
+    if (evsFilt.length > 3) { var m = document.createElement('div'); m.className='cal-more'; m.textContent='+'+(evsFilt.length-3)+' mais'; d.appendChild(m); }
+    if (evsFilt.length > 0) {
+      d.classList.add('has-ev');
+      (function(evList, label, ds2) {
+        d.onclick = function() {
+          document.getElementById('modal-ev-titulo').textContent = label;
+          document.getElementById('modal-ev-data').textContent = ds2.split('-').reverse().join('/');
+          document.getElementById('modal-ev-corpo').innerHTML = evList.map(function(ev) {
+            var cores = {gira:'#DBEAFE|#1E40AF',hom:'#EDE9FE|#6D28D9',curso:'#D1FAE5|#065F46',firmeza:'#FEF3C7|#92400E',outros:'#F3F4F6|#6B7280'};
+            var c = (cores[ev.tp]||'#F3F4F6|#6B7280').split('|');
+            var gurl = gcalLink(ev.t, ds2, ev.det||'');
+            return '<div style="padding:12px;background:'+c[0]+';border-radius:8px;margin-bottom:8px;">'
+              +'<div style="font-size:10px;font-weight:700;color:'+c[1]+';text-transform:uppercase;margin-bottom:4px;">'+ev.tp+'</div>'
+              +'<div style="font-size:14px;font-weight:700;color:var(--texto);">'+ev.t+'</div>'
+              +(ev.det?'<div style="font-size:12.5px;color:var(--muted);margin-top:5px;">'+ev.det+'</div>':'')
+              +'<a href="'+gurl+'" target="_blank" class="btn-gcal">📅 Adicionar ao Google Calendar</a>'
+              +'</div>';
+          }).join('');
+          document.getElementById('modal-ev').classList.add('open');
+        };
+      })(evsFilt, day+' de '+MESES[calAtual.mes], ds);
+    }
     grid.appendChild(d);
   }
-  var tot=prim+dim;var rest=tot%7===0?0:7-(tot%7);
-  for(var r=1;r<=rest;r++){var d=document.createElement('div');d.className='cal-day other-month';d.innerHTML='<div class="cal-day-num">'+r+'</div>';grid.appendChild(d);}
+  var tot = prim+dim; var rest = tot%7===0?0:7-(tot%7);
+  for (var r = 1; r <= rest; r++) {
+    var d = document.createElement('div'); d.className='cal-day other-month';
+    d.innerHTML='<div class="cal-day-num">'+r+'</div>'; grid.appendChild(d);
+  }
 }
-function fecharModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.modal-overlay').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});});
+function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open');
+  if (e.target.classList.contains('perfil-modal-overlay')) e.target.classList.remove('open');
+  if (e.target.classList.contains('rename-modal')) e.target.classList.remove('open');
+  if (e.target.classList.contains('membro-modal-overlay')) e.target.classList.remove('open');
+});
 
-// ===== FIRMEZAS =====
-function buildFirmezas(){
-  var todos=document.getElementById('fi-todos');if(!todos)return;
-  var mmap={};
-  FIRMEZAS.forEach(function(f){var p=f.d.split('-');var m=parseInt(p[1])-1;var k=MESES[m];if(!mmap[k])mmap[k]=[];mmap[k].push(f);});
-  todos.innerHTML='';
-  Object.keys(mmap).forEach(function(mes){
-    todos.innerHTML+='<div style="font-size:11px;font-weight:700;color:var(--azul);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--borda);padding-bottom:4px;">'+mes+'</div>';
-    mmap[mes].forEach(function(f){
-      var p=f.d.split('-');var mb=(GRUPOS[f.g]||[]).map(function(m){return'<span class="membro-tag">'+m+'</span>';}).join('');
-      todos.innerHTML+='<div class="firmeza-row"><div class="firmeza-date">'+p[2]+'/'+p[1]+'</div><span class="grupo-tag">Grupo '+f.g+'</span><div class="grupo-membros">'+mb+'</div></div>';
+// ==============================
+// GOOGLE CALENDAR
+// ==============================
+function gcalLink(titulo, dataStr, descricao) {
+  var p = dataStr.indexOf('-') > 0 ? dataStr.split('-') : dataStr.split('/').reverse();
+  var dt = p[0]+pad(parseInt(p[1]))+pad(parseInt(p[2]));
+  var dObj = new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);
+  var dtEnd = dObj.getFullYear()+String(dObj.getMonth()+1).padStart(2,'0')+String(dObj.getDate()).padStart(2,'0');
+  var details = (descricao||'')+'\\nTUCIC - Florianópolis/SC\\n⚠️ Preceito obrigatório 24h antes das giras!';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    +'&text='+encodeURIComponent(titulo+' — TUCIC')
+    +'&dates='+dt+'/'+dtEnd
+    +'&details='+encodeURIComponent(details)
+    +'&location='+encodeURIComponent('TUCIC - Tenda de Umbanda Cabocla Inaê das Cachoeiras, Florianópolis/SC')
+    +'&sf=true&output=xml';
+}
+function exportarTodosGcal() {
+  var todos = todosEvs();
+  var linhas = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//TUCIC//Portal//PT','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:TUCIC 2026','X-WR-TIMEZONE:America/Sao_Paulo'];
+  todos.forEach(function(ev) {
+    var p=ev.d.split('-'); var dt=p[0]+p[1]+p[2];
+    var dObj=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);
+    var dtEnd=dObj.getFullYear()+String(dObj.getMonth()+1).padStart(2,'0')+String(dObj.getDate()).padStart(2,'0');
+    var uid=ev.d.replace(/-/g,'')+'-'+ev.t.length+'@tucic';
+    var desc=(ev.det||'')+'\\nTipo: '+ev.tp+'\\nTUCIC - Florianópolis/SC';
+    if(ev.tp==='gira'||ev.tp==='hom') desc+='\\n⚠️ Preceito obrigatório 24h antes!';
+    linhas.push('BEGIN:VEVENT','DTSTART;VALUE=DATE:'+dt,'DTEND;VALUE=DATE:'+dtEnd,
+      'SUMMARY:'+ev.t+' — TUCIC','DESCRIPTION:'+desc.replace(/\n/g,'\\n'),
+      'UID:'+uid,'END:VEVENT');
+  });
+  linhas.push('END:VCALENDAR');
+  var blob=new Blob([linhas.join('\r\n')],{type:'text/calendar;charset=utf-8'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a');
+  a.href=url; a.download='TUCIC_2026.ics'; a.click(); URL.revokeObjectURL(url);
+}
+
+// ==============================
+// FIRMEZAS
+// ==============================
+function buildFirmezas() {
+  var todos = document.getElementById('fi-todos'); if (!todos) return;
+  var mmap = {};
+  FIRMEZAS.forEach(function(f) {
+    var p=f.d.split('-'); var k=MESES[parseInt(p[1])-1];
+    if (!mmap[k]) mmap[k]=[]; mmap[k].push(f);
+  });
+  todos.innerHTML = '';
+  Object.keys(mmap).forEach(function(mes) {
+    todos.innerHTML += '<div style="font-size:11px;font-weight:700;color:var(--azul);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--borda);padding-bottom:4px;">'+mes+'</div>';
+    mmap[mes].forEach(function(f) {
+      var p=f.d.split('-'); var mb=(GRUPOS[f.g]||[]).map(function(m){ return '<span class="membro-tag">'+m+'</span>'; }).join('');
+      todos.innerHTML += '<div class="firmeza-row"><div class="firmeza-date">'+p[2]+'/'+p[1]+'</div><span class="grupo-tag">Grupo '+f.g+'</span><div class="grupo-membros">'+mb+'</div></div>';
     });
   });
-  for(var g=1;g<=6;g++){
-    var el=document.getElementById('fi-g'+g);if(!el)continue;
-    var mb=(GRUPOS[g]||[]).map(function(m){return'<span class="membro-tag">'+m+'</span>';}).join('');
-    el.innerHTML='<div class="grupo-membros" style="margin-bottom:14px;">'+mb+'</div>';
-    FIRMEZAS.filter(function(f){return f.g===g;}).forEach(function(f){var p=f.d.split('-');el.innerHTML+='<div class="firmeza-row"><div class="firmeza-date">'+p[2]+'/'+p[1]+'/'+p[0]+'</div></div>';});
+  for (var g=1; g<=6; g++) {
+    var el=document.getElementById('fi-g'+g); if (!el) continue;
+    var mb=(GRUPOS[g]||[]).map(function(m){ return '<span class="membro-tag">'+m+'</span>'; }).join('');
+    el.innerHTML = '<div class="grupo-membros" style="margin-bottom:14px;">'+mb+'</div>';
+    FIRMEZAS.filter(function(f){ return f.g===g; }).forEach(function(f) {
+      var p=f.d.split('-');
+      el.innerHTML += '<div class="firmeza-row"><div class="firmeza-date">'+p[2]+'/'+p[1]+'/'+p[0]+'</div><span style="font-size:11px;color:var(--muted);">Quinta-feira</span></div>';
+    });
   }
-  var gg=document.getElementById('grupos-grid');if(!gg)return;gg.innerHTML='';
-  for(var g=1;g<=6;g++){var mb=(GRUPOS[g]||[]).map(function(m){return'<span class="membro-tag">'+m+'</span>';}).join('');gg.innerHTML+='<div class="rc"><div style="font-size:13px;font-weight:700;color:var(--azul);margin-bottom:10px;">Grupo '+g+'</div><div class="grupo-membros">'+mb+'</div></div>';}
+  var gg=document.getElementById('grupos-grid'); if (!gg) return; gg.innerHTML='';
+  for (var g=1; g<=6; g++) {
+    var mb=(GRUPOS[g]||[]).map(function(m){ return '<span class="membro-tag">'+m+'</span>'; }).join('');
+    gg.innerHTML += '<div class="rc"><div style="font-size:13px;font-weight:700;color:var(--azul);margin-bottom:10px;">Grupo '+g+'</div><div class="grupo-membros">'+mb+'</div></div>';
+  }
 }
 
-// ===== FUNÇÕES =====
-function buildFuncoes(){
-  var el=document.getElementById('funcoes-list');if(!el)return;
-  var html='<div style="overflow-x:auto;"><table class="at"><thead><tr><th>Data</th><th>Gira</th><th>Abertura</th><th>Defumação</th><th>Aux.</th></tr></thead><tbody>';
-  FUNCOES.forEach(function(f){var p=f.d.split('-');html+='<tr><td><strong style="color:var(--azul);">'+p[2]+'/'+p[1]+'</strong></td><td>'+f.gira+'</td><td>'+f.abertura+'</td><td>'+f.def+'</td><td>'+f.auxDef+'</td></tr>';});
-  html+='</tbody></table></div>';
-  el.innerHTML=html;
+// ==============================
+// FUNÇÕES NAS GIRAS
+// ==============================
+function buildFuncoes() {
+  var el=document.getElementById('funcoes-list'); if (!el) return;
+  var html='<div style="overflow-x:auto;"><table class="at"><thead><tr><th>Data</th><th>Gira</th><th>Abertura</th><th>Defumação</th><th>Aux. Defumação</th></tr></thead><tbody>';
+  FUNCOES.forEach(function(f) {
+    var p=f.d.split('-');
+    html += '<tr><td><strong style="color:var(--azul);">'+p[2]+'/'+p[1]+'</strong></td><td>'+f.gira+'</td><td>'+f.abertura+'</td><td>'+f.def+'</td><td>'+f.auxDef+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
 }
 
-// ===== EVENTOS ADMIN =====
-function addEvento(){
+// ==============================
+// ADMIN: CALENDÁRIO
+// ==============================
+function addEvento() {
   var data=document.getElementById('ev-data').value;
   var titulo=document.getElementById('ev-titulo').value.trim();
   var tipo=document.getElementById('ev-tipo').value;
   var det=document.getElementById('ev-det').value.trim();
-  if(!data||!titulo){alert('Preencha a data e o nome do evento.');return;}
-  eventosCustom.push({d:data,t:titulo,tp:tipo,det:det});
+  if (!data||!titulo) { alert('Preencha a data e o nome do evento.'); return; }
+  eventosCustom.push({d:data, t:titulo, tp:tipo, det:det, custom:true});
   document.getElementById('ev-data').value='';
   document.getElementById('ev-titulo').value='';
   document.getElementById('ev-det').value='';
   renderCalendario();
   renderCustomEvents();
-  var fb=document.getElementById('ev-feedback');fb.style.display='inline';setTimeout(function(){fb.style.display='none';},2500);
+  var fb=document.getElementById('ev-feedback'); fb.style.display='inline';
+  setTimeout(function(){ fb.style.display='none'; }, 2500);
 }
-function renderCustomEvents(){
-  var el=document.getElementById('custom-events-list');if(!el)return;
-  if(eventosCustom.length===0){el.innerHTML='<div style="color:var(--muted2);font-size:13px;padding:12px 0;">Nenhum evento adicionado ainda.</div>';return;}
-  el.innerHTML=eventosCustom.map(function(ev,i){var p=ev.d.split('-');return'<div class="ev-list-item"><div class="ev-date">'+p[2]+'/'+p[1]+'</div><div class="ev-name">'+ev.t+'</div><span class="badge badge-azul" style="font-size:9px;">'+ev.tp+'</span><button class="btn-sm btn-del" onclick="removerEvento('+i+')">Excluir</button></div>';}).join('');
+function renderCustomEvents() {
+  var el=document.getElementById('custom-events-list'); if (!el) return;
+  if (eventosCustom.length===0) { el.innerHTML='<div style="color:var(--muted2);font-size:13px;padding:12px 0;">Nenhum evento adicionado ainda.</div>'; return; }
+  el.innerHTML = eventosCustom.map(function(ev,i) {
+    var p=ev.d.split('-');
+    return '<div class="ev-list-item"><div class="ev-date">'+p[2]+'/'+p[1]+'</div><div class="ev-name">'+ev.t+'</div><span class="badge badge-azul" style="font-size:9px;">'+ev.tp+'</span><div class="ev-actions"><button class="btn-sm btn-del" onclick="removerEvento('+i+')">Excluir</button></div></div>';
+  }).join('');
 }
-function removerEvento(i){eventosCustom.splice(i,1);renderCalendario();renderCustomEvents();}
+function removerEvento(i) { eventosCustom.splice(i,1); renderCalendario(); renderCustomEvents(); }
 
-// ===== EDITOR PÁGINAS =====
-function novaPagina(){paginaEditando=null;document.getElementById('page-titulo').value='';document.getElementById('page-icone').value='📄';document.getElementById('editor').innerHTML='';document.getElementById('editor-area').style.display='block';document.getElementById('editor').focus();}
-function salvarPagina(){
+// ==============================
+// ADMIN: PÁGINAS
+// ==============================
+function novaPagina() {
+  paginaEditando=null;
+  document.getElementById('page-titulo').value='';
+  document.getElementById('page-icone').value='📄';
+  document.getElementById('editor').innerHTML='';
+  document.getElementById('editor-area').style.display='block';
+  document.getElementById('editor').focus();
+}
+function salvarPagina() {
   var t=document.getElementById('page-titulo').value.trim();
   var ic=document.getElementById('page-icone').value;
   var c=document.getElementById('editor').innerHTML;
-  if(!t){alert('Digite um título.');return;}
-  var obj={titulo:t,icone:ic,conteudo:c,data:new Date().toLocaleDateString('pt-BR')};
-  if(paginaEditando!==null)paginas[paginaEditando]=obj;
-  else{paginas.push(obj);adicionarAoMenu(t,ic,paginas.length-1);}
+  if (!t) { alert('Digite um título.'); return; }
+  var obj={titulo:t, icone:ic, conteudo:c, data:new Date().toLocaleDateString('pt-BR')};
+  if (paginaEditando!==null) paginas[paginaEditando]=obj;
+  else { paginas.push(obj); adicionarAoMenu(t,ic,paginas.length-1); }
   document.getElementById('editor-area').style.display='none';
-  renderPaginas();paginaEditando=null;
+  renderPaginas();
+  paginaEditando=null;
 }
-function adicionarAoMenu(titulo,icone,idx){
-  var nav=document.querySelector('#adm-nav');
-  var ni=document.createElement('div');ni.className='ni';
-  ni.innerHTML='<span class="ni-ic">'+icone+'</span>'+titulo;
-  ni.onclick=(function(i,el){return function(){verPagina(i,el);};})(idx,ni);
-  nav.appendChild(ni);
-}
-function renderPaginas(){
+function adicionarAoMenu(titulo,icone,idx) {
   renderNavCustomPages();
-  var el=document.getElementById('paginas-lista');if(!el)return;
-  if(paginas.length===0){el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted2);">Nenhuma página criada ainda.</div>';return;}
-  el.innerHTML=paginas.map(function(p,i){return'<div class="page-item"><div class="page-info"><div class="page-title2">'+p.icone+' '+p.titulo+'</div><div class="page-meta">Criada em '+p.data+'</div></div><div style="display:flex;gap:6px;"><button class="btn-sm btn-edit" onclick="editarPagina('+i+')">Editar</button><button class="btn-sm btn-del" onclick="deletarPagina('+i+')">Excluir</button></div></div>';}).join('');
 }
-function editarPagina(i){paginaEditando=i;document.getElementById('page-titulo').value=paginas[i].titulo;document.getElementById('page-icone').value=paginas[i].icone;document.getElementById('editor').innerHTML=paginas[i].conteudo;document.getElementById('editor-area').style.display='block';document.getElementById('editor').focus();}
-function deletarPagina(i){if(confirm('Excluir esta página?')){paginas.splice(i,1);renderPaginas();}}
-function verPagina(i,ni){
-  var p=paginas[i];if(!p)return;
+function renderNavCustomPages() {
+  var container=document.getElementById('nav-custom-pages'); if (!container) return;
+  container.innerHTML = paginas.map(function(p,i) {
+    return '<div class="nav-page-item" id="nav-pg-'+i+'" onclick="verPagina('+i+',this)">'
+      +'<span style="font-size:13px;">'+p.icone+'</span>'
+      +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+p.titulo+'</span>'
+      +(isAdmin?'<span class="page-actions-mini">'
+        +'<button class="mini-btn" onclick="event.stopPropagation();renomearPagina('+i+')" title="Renomear">✏️</button>'
+        +'<button class="mini-btn" onclick="event.stopPropagation();moverPagina('+i+',-1)" title="Subir">↑</button>'
+        +'<button class="mini-btn" onclick="event.stopPropagation();moverPagina('+i+',1)" title="Descer">↓</button>'
+        +'<button class="mini-btn" onclick="event.stopPropagation();deletarPaginaSidebar('+i+')" title="Excluir">✕</button>'
+        +'</span>':'')
+      +'</div>';
+  }).join('');
+}
+function renderPaginas() {
+  renderNavCustomPages();
+  var el=document.getElementById('paginas-lista'); if (!el) return;
+  if (paginas.length===0) { el.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted2);">Nenhuma página criada ainda.</div>'; return; }
+  el.innerHTML = paginas.map(function(p,i) {
+    return '<div class="page-item"><div class="page-info"><div class="page-title2">'+p.icone+' '+p.titulo+'</div><div class="page-meta">Criada em '+p.data+'</div></div>'
+      +'<div class="page-actions"><button class="btn-sm btn-edit" onclick="editarPagina('+i+')">Editar</button><button class="btn-sm btn-del" onclick="deletarPagina('+i+')">Excluir</button></div></div>';
+  }).join('');
+}
+function editarPagina(i) {
+  paginaEditando=i;
+  document.getElementById('page-titulo').value=paginas[i].titulo;
+  document.getElementById('page-icone').value=paginas[i].icone;
+  document.getElementById('editor').innerHTML=paginas[i].conteudo;
+  document.getElementById('editor-area').style.display='block';
+  document.getElementById('editor').focus();
+}
+function deletarPagina(i) { if (confirm('Excluir esta página?')) { paginas.splice(i,1); renderPaginas(); } }
+function deletarPaginaSidebar(i) { if (confirm('Excluir "'+paginas[i].titulo+'"?')) { paginas.splice(i,1); renderNavCustomPages(); renderPaginas(); sec('inicio',document.getElementById('nav-inicio')); } }
+function verPagina(i,navEl) {
+  var p=paginas[i]; if (!p) return;
   var id='sec-pg-'+i;
-  if(!document.getElementById(id)){var s=document.createElement('div');s.id=id;s.className='sec';s.innerHTML='<div class="ph">'+p.icone+' '+p.titulo+'</div><div class="ps">Criada em '+p.data+'</div><div class="rc" style="font-size:14px;line-height:1.8;">'+p.conteudo+'</div>';document.getElementById('main-area').appendChild(s);}
-  sec('pg-'+i,ni);
+  if (!document.getElementById(id)) {
+    var nova=document.createElement('div'); nova.id=id; nova.className='sec';
+    nova.innerHTML='<div class="ph">'+p.icone+' '+p.titulo+'</div><div class="ps">Criada em '+p.data+'</div><div style="font-size:14px;line-height:1.8;color:#374151;">'+p.conteudo+'</div>';
+    document.querySelector('.main').appendChild(nova);
+  }
+  sec('pg-'+i, navEl);
 }
-function fmt(cmd){document.execCommand(cmd,false,null);}
-function fmtBlk(tag){document.getElementById('editor').focus();document.execCommand('formatBlock',false,'<'+tag+'>');}
-function inserirImg(){var url=prompt('URL da imagem:');if(url){document.getElementById('editor').focus();document.execCommand('insertImage',false,url);}}
-
-// ===== MEMBROS =====
-function aprovar(btn){var r=btn.closest('tr');r.cells[3].className='sa';r.cells[3].textContent='✓ Ativo';r.cells[4].innerHTML='—';}
-function recusar(btn){var r=btn.closest('tr');r.style.opacity='.4';r.cells[3].textContent='✗ Recusado';r.cells[4].innerHTML='—';}
-
-// ===== PDF =====
-var uploadZone=document.getElementById('upload-zone');
-if(uploadZone){
-  uploadZone.addEventListener('dragover',function(e){e.preventDefault();this.style.borderColor='var(--azul)';});
-  uploadZone.addEventListener('dragleave',function(){this.style.borderColor='';});
-  uploadZone.addEventListener('drop',function(e){e.preventDefault();this.style.borderColor='';var f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')lerPDF(f);});
+function renomearPagina(i) {
+  document.getElementById('rename-titulo').value=paginas[i].titulo;
+  document.getElementById('rename-icone').value=paginas[i].icone;
+  document.getElementById('rename-idx').value=i;
+  document.getElementById('rename-modal').classList.add('open');
 }
-function processarPDF(input){if(input.files[0])lerPDF(input.files[0]);}
-function lerPDF(file){
-  var result=document.getElementById('pdf-result');
-  result.innerHTML='<div class="pdf-processing"><div class="pdf-name">📄 '+file.name+'</div><div style="color:var(--muted);">⏳ Extraindo texto...</div></div>';
-  if(typeof pdfjsLib==='undefined'){result.innerHTML='<div class="av red"><div class="avb">Erro: biblioteca PDF.js não carregou. Verifique sua conexão.</div></div>';return;}
+function salvarRename() {
+  var i=parseInt(document.getElementById('rename-idx').value);
+  paginas[i].titulo=document.getElementById('rename-titulo').value.trim()||paginas[i].titulo;
+  paginas[i].icone=document.getElementById('rename-icone').value||paginas[i].icone;
+  document.getElementById('rename-modal').classList.remove('open');
+  renderNavCustomPages(); renderPaginas();
+}
+function moverPagina(i,dir) {
+  var j=i+dir; if (j<0||j>=paginas.length) return;
+  var tmp=paginas[i]; paginas[i]=paginas[j]; paginas[j]=tmp;
+  renderNavCustomPages(); renderPaginas();
+}
+function fmt(cmd) { document.execCommand(cmd,false,null); }
+function fmtBlk(tag) { document.getElementById('editor').focus(); document.execCommand('formatBlock',false,'<'+tag+'>'); }
+function inserirImg() { var url=prompt('URL da imagem:'); if (url) { document.getElementById('editor').focus(); document.execCommand('insertImage',false,url); } }
+
+// ==============================
+// ADMIN: MEMBROS
+// ==============================
+function getMembros() { try { return JSON.parse(localStorage.getItem('tucic_membros')||'[]'); } catch(e) { return []; } }
+function setMembros(lista) { localStorage.setItem('tucic_membros', JSON.stringify(lista)); }
+function memTab(tab,el) {
+  document.querySelectorAll('.mem-tab').forEach(function(t){ t.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  document.getElementById('mem-lista-view').style.display = tab==='lista'?'block':'none';
+  document.getElementById('mem-fichas-view').style.display = tab==='fichas'?'block':'none';
+  if (tab==='fichas') renderFichas();
+}
+function renderMembros() {
+  var membros=getMembros();
+  var busca=((document.getElementById('mem-busca')||{}).value||'').toLowerCase();
+  var filtro=((document.getElementById('mem-filtro')||{}).value)||'todos';
+  var filtrados=membros.filter(function(m) {
+    var matchB=!busca||(m.nomeTerreiro||m.nomeRegistro||'').toLowerCase().includes(busca)||(m.email||'').toLowerCase().includes(busca);
+    var matchF=filtro==='todos'||m.status===filtro;
+    return matchB&&matchF;
+  });
+  var container=document.getElementById('mem-lista-container');
+  var empty=document.getElementById('mem-empty');
+  if (!container) return;
+  if (filtrados.length===0) { container.innerHTML=''; if(empty) empty.style.display='block'; return; }
+  if (empty) empty.style.display='none';
+  container.innerHTML=filtrados.map(function(m) {
+    var realIdx=membros.indexOf(m);
+    var nome=m.nomeTerreiro||m.nomeRegistro||m.email||'Sem nome';
+    var ini=nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+    var stBadge=m.status==='ativo'?'<span class="mem-badge badge-ativo">✅ Ativo</span>':m.status==='inativo'?'<span class="mem-badge badge-inativo">❌ Inativo</span>':'<span class="mem-badge badge-pendente">⏳ Pendente</span>';
+    var pfBadge=m.perfil==='admin'?'<span class="mem-badge badge-admin">⚙️ Admin</span>':'<span class="mem-badge badge-membro">👤 Membro</span>';
+    return '<div class="mem-card">'
+      +'<div class="mem-card-header"><div class="mem-avatar">'+(m.foto?'<img src="'+m.foto+'">':ini)+'</div>'
+      +'<div style="flex:1;"><div class="mem-name">'+nome+'</div><div class="mem-email">'+(m.email||'')+'</div>'
+      +'<div class="mem-badges">'+stBadge+pfBadge+(m.nivel?'<span class="mem-badge badge-membro">'+m.nivel+'</span>':'')+'</div></div></div>'
+      +'<div class="mem-detail-grid">'
+      +(m.celular?'<div class="mem-detail-item"><span class="mem-detail-label">Celular</span><span class="mem-detail-value">'+m.celular+'</span></div>':'')
+      +(m.orixas?'<div class="mem-detail-item"><span class="mem-detail-label">Orixás</span><span class="mem-detail-value">'+m.orixas+'</span></div>':'')
+      +(m.guiaFrente?'<div class="mem-detail-item"><span class="mem-detail-label">Guia de Frente</span><span class="mem-detail-value">'+m.guiaFrente+'</span></div>':'')
+      +'</div>'
+      +'<div class="mem-card-actions">'
+      +(m.status==='pendente'?'<button class="btn-sm btn-edit" onclick="aprovarMembro('+realIdx+')">✅ Aprovar</button>':'')
+      +'<button class="btn-sm btn-edit" onclick="editarMembro('+realIdx+')">✏️ Editar</button>'
+      +(m.status==='ativo'?'<button class="btn-sm btn-del" onclick="toggleStatusMembro('+realIdx+',\'inativo\')">❌ Desativar</button>':m.status==='inativo'?'<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+realIdx+',\'ativo\')">✅ Reativar</button>':'')
+      +'<button class="btn-sm btn-del" onclick="excluirMembro('+realIdx+')">🗑 Excluir</button>'
+      +'</div></div>';
+  }).join('');
+}
+function renderFichas() {
+  var membros=getMembros(); var container=document.getElementById('mem-fichas-container'); if (!container) return;
+  if (membros.length===0) { container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted2);">Nenhum membro cadastrado.</div>'; return; }
+  container.innerHTML=membros.map(function(m,i) {
+    var nome=m.nomeTerreiro||m.nomeRegistro||m.email||'Sem nome';
+    var ini=nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+    var campos=[['Nome de Registro',m.nomeRegistro],['Nome Atual',m.nomeAtual],['Nome no Terreiro',m.nomeTerreiro],['E-mail',m.email],['CPF',m.cpf],['RG',m.rg+(m.rgOrg?' — '+m.rgOrg:'')],['Nascimento',m.nascimento],['Estado Civil',m.estadoCivil],['Celular',m.celular],['Instagram',m.instagram],['Profissão',m.profissao],['Escolaridade',m.escolaridade],['Endereço',m.endereco+(m.cidade?', '+m.cidade:'')+(m.uf?' — '+m.uf:'')],['CEP',m.cep],['Acomp. Psicológico',m.saudePsico],['Problema de Saúde',m.saudeProblema],['Obs. Saúde',m.saudeObs],['Mãe/Pai de Santo',m.maePaiSanto],['Guia de Frente',m.guiaFrente],['Orixás',m.orixas],['Padrinhos Carnais',m.padrinhosCarnais],['Padrinhos Espirituais',m.padrinhosEsp],['Nível Espiritual',m.nivel],['Outro Terreiro',m.outroTerreiro],['Trajetória',m.trajetoria],['Int. Atendimento',m.intAtendimento?'Sim':''],['Int. Suporte',m.intSuporte?'Sim':''],['Int. Auxílio',m.intAuxilio?'Sim':''],['Menor de Idade',m.menor],['Status',m.status],['Perfil',m.perfil],['Observações',m.obs]].filter(function(c){ return c[1]; });
+    return '<div class="mem-card" style="margin-bottom:16px;">'
+      +'<div class="mem-card-header"><div class="mem-avatar" style="width:56px;height:56px;font-size:18px;">'+(m.foto?'<img src="'+m.foto+'">':ini)+'</div>'
+      +'<div><div class="mem-name" style="font-size:16px;">'+nome+'</div><div class="mem-email">'+m.email+'</div></div>'
+      +'<div style="margin-left:auto;"><button class="btn-sm btn-edit" onclick="editarMembro('+i+')">✏️ Editar</button></div></div>'
+      +'<div class="mem-detail-grid" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--borda);">'
+      +campos.map(function(c){ return '<div class="mem-detail-item"><span class="mem-detail-label">'+c[0]+'</span><span class="mem-detail-value">'+c[1]+'</span></div>'; }).join('')
+      +'</div></div>';
+  }).join('');
+}
+function abrirCadastroMembro(preenchido) {
+  document.getElementById('membro-modal-titulo').textContent='Novo Membro';
+  document.getElementById('membro-id').value='';
+  var campos=['m-nome-registro','m-nome-atual','m-nome-terreiro','m-email','m-cpf','m-rg','m-rg-org','m-nascimento','m-celular','m-instagram','m-profissao','m-endereco','m-cep','m-uf','m-saude-obs','m-guia-frente','m-orixas','m-padrinhos-carnais','m-padrinhos-esp','m-trajetoria','m-obs','m-senha'];
+  campos.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['m-estado-civil','m-escolaridade','m-saude-psico','m-saude-problema','m-nivel','m-outro-terreiro'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('m-mae-pai-santo').value='Mãe Rosi de Oxum';
+  document.getElementById('m-status').value='pendente';
+  document.getElementById('m-perfil').value='membro';
+  ['m-int-atendimento','m-int-suporte','m-int-auxilio'].forEach(function(id){ var el=document.getElementById(id); if(el) el.checked=false; });
+  if (preenchido) preencherFormMembro(preenchido);
+  document.getElementById('membro-modal').classList.add('open');
+}
+function preencherFormMembro(m) {
+  var map={'m-nome-registro':m.nomeRegistro,'m-nome-atual':m.nomeAtual,'m-nome-terreiro':m.nomeTerreiro,'m-email':m.email,'m-cpf':m.cpf,'m-rg':m.rg,'m-rg-org':m.rgOrg,'m-nascimento':m.nascimento,'m-celular':m.celular,'m-instagram':m.instagram,'m-profissao':m.profissao,'m-endereco':m.endereco,'m-cep':m.cep,'m-uf':m.uf,'m-saude-psico':m.saudePsico,'m-saude-problema':m.saudeProblema,'m-saude-obs':m.saudeObs,'m-estado-civil':m.estadoCivil,'m-escolaridade':m.escolaridade,'m-mae-pai-santo':m.maePaiSanto,'m-guia-frente':m.guiaFrente,'m-orixas':m.orixas,'m-padrinhos-carnais':m.padrinhosCarnais,'m-padrinhos-esp':m.padrinhosEsp,'m-nivel':m.nivel,'m-outro-terreiro':m.outroTerreiro,'m-trajetoria':m.trajetoria,'m-obs':m.obs,'m-status':m.status,'m-perfil':m.perfil,'m-senha':m.senha};
+  Object.keys(map).forEach(function(id){ var el=document.getElementById(id); if(el&&map[id]) el.value=map[id]; });
+  if(m.intAtendimento) document.getElementById('m-int-atendimento').checked=true;
+  if(m.intSuporte)     document.getElementById('m-int-suporte').checked=true;
+  if(m.intAuxilio)     document.getElementById('m-int-auxilio').checked=true;
+}
+function editarMembro(idx) {
+  var membros=getMembros(); var m=membros[idx]; if (!m) return;
+  document.getElementById('membro-modal-titulo').textContent='Editar Membro';
+  document.getElementById('membro-id').value=idx;
+  abrirCadastroMembro(m);
+}
+function salvarMembro() {
+  var email=document.getElementById('m-email').value.trim();
+  var nomeReg=document.getElementById('m-nome-registro').value.trim();
+  if (!email&&!nomeReg) { alert('Preencha ao menos o nome ou e-mail.'); return; }
+  var m={nomeRegistro:nomeReg,nomeAtual:document.getElementById('m-nome-atual').value.trim(),nomeTerreiro:document.getElementById('m-nome-terreiro').value.trim(),email:email,cpf:document.getElementById('m-cpf').value.trim(),rg:document.getElementById('m-rg').value.trim(),rgOrg:document.getElementById('m-rg-org').value.trim(),nascimento:document.getElementById('m-nascimento').value,estadoCivil:document.getElementById('m-estado-civil').value,celular:document.getElementById('m-celular').value.trim(),instagram:document.getElementById('m-instagram').value.trim(),profissao:document.getElementById('m-profissao').value.trim(),escolaridade:document.getElementById('m-escolaridade').value,endereco:document.getElementById('m-endereco').value.trim(),cep:document.getElementById('m-cep').value.trim(),uf:document.getElementById('m-uf').value.trim(),saudePsico:document.getElementById('m-saude-psico').value,saudeProblema:document.getElementById('m-saude-problema').value,saudeObs:document.getElementById('m-saude-obs').value.trim(),maePaiSanto:document.getElementById('m-mae-pai-santo').value.trim(),guiaFrente:document.getElementById('m-guia-frente').value.trim(),orixas:document.getElementById('m-orixas').value.trim(),padrinhosCarnais:document.getElementById('m-padrinhos-carnais').value.trim(),padrinhosEsp:document.getElementById('m-padrinhos-esp').value.trim(),nivel:document.getElementById('m-nivel').value,outroTerreiro:document.getElementById('m-outro-terreiro').value,trajetoria:document.getElementById('m-trajetoria').value.trim(),intAtendimento:document.getElementById('m-int-atendimento').checked,intSuporte:document.getElementById('m-int-suporte').checked,intAuxilio:document.getElementById('m-int-auxilio').checked,status:document.getElementById('m-status').value,perfil:document.getElementById('m-perfil').value,senha:document.getElementById('m-senha').value.trim(),obs:document.getElementById('m-obs').value.trim(),dataCadastro:new Date().toLocaleDateString('pt-BR')};
+  var membros=getMembros(); var idxEdit=document.getElementById('membro-id').value;
+  if (idxEdit!=='') { if(membros[idxEdit]&&membros[idxEdit].foto) m.foto=membros[idxEdit].foto; membros[parseInt(idxEdit)]=m; }
+  else membros.push(m);
+  if (m.email&&m.senha) { var nome=m.nomeTerreiro||m.nomeRegistro||m.email; var ini=nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase(); USERS[m.email]={pass:m.senha,name:nome,role:m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO',ini:ini,admin:m.perfil==='admin'}; }
+  setMembros(membros);
+  document.getElementById('membro-modal').classList.remove('open');
+  renderMembros();
+}
+function aprovarMembro(idx) { var m=getMembros(); if(!m[idx]) return; m[idx].status='ativo'; setMembros(m); renderMembros(); }
+function toggleStatusMembro(idx,s) { var m=getMembros(); if(!m[idx]) return; m[idx].status=s; setMembros(m); renderMembros(); }
+function excluirMembro(idx) {
+  var m=getMembros(); var nome=m[idx]?(m[idx].nomeTerreiro||m[idx].nomeRegistro||m[idx].email):'';
+  if (!confirm('Excluir "'+nome+'"?')) return;
+  if(m[idx]&&m[idx].email) delete USERS[m[idx].email];
+  m.splice(idx,1); setMembros(m); renderMembros();
+}
+function exportarMembros() {
+  var blob=new Blob([JSON.stringify(getMembros(),null,2)],{type:'application/json'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a');
+  a.href=url; a.download='TUCIC_membros_'+new Date().toISOString().slice(0,10)+'.json'; a.click(); URL.revokeObjectURL(url);
+}
+function importarMembros(input) {
+  if (!input.files[0]) return;
   var reader=new FileReader();
   reader.onload=function(e){
-    pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise.then(function(pdf){
-      var promises=[];
-      for(var i=1;i<=pdf.numPages;i++)promises.push(pdf.getPage(i).then(function(page){return page.getTextContent().then(function(tc){return tc.items.map(function(item){return item.str;}).join(' ');});}));
-      Promise.all(promises).then(function(texts){
-        var texto=texts.join('\n\n').trim();
-        var nome=file.name.replace('.pdf','').replace(/_/g,' ');
-        result.innerHTML='<div class="pdf-processing"><div class="pdf-name">✅ '+file.name+'</div><div class="pdf-preview" id="pdf-text">'+texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div class="pdf-actions"><button class="btn-add-ev" onclick="criarPaginaDoPDF(\''+nome.replace(/'/g,'')+'\')">Criar Página com este Conteúdo</button><button class="btn-sec" onclick="copiarTexto()">Copiar Texto</button></div><div id="pdf-feedback" style="font-size:12px;color:var(--success);margin-top:8px;display:none;font-weight:700;"></div></div>';
-      }).catch(function(){result.innerHTML='<div class="av red"><div class="avb">Erro ao extrair páginas do PDF.</div></div>';});
-    }).catch(function(){result.innerHTML='<div class="av red"><div class="avb">Não foi possível ler este PDF. Verifique se não está protegido por senha.</div></div>';});
+    try {
+      var dados=JSON.parse(e.target.result);
+      if (!Array.isArray(dados)) { alert('Arquivo inválido.'); return; }
+      var atual=getMembros();
+      dados.forEach(function(m){ var idx=atual.findIndex(function(a){ return a.email&&a.email===m.email; }); if(idx>-1) atual[idx]=m; else atual.push(m); });
+      setMembros(atual); renderMembros(); alert('✅ '+dados.length+' membro(s) importado(s)!');
+    } catch(e) { alert('Erro: '+e.message); }
   };
-  reader.readAsArrayBuffer(file);
+  reader.readAsText(input.files[0]);
 }
-function criarPaginaDoPDF(nome){
-  var txt=document.getElementById('pdf-text');if(!txt)return;
-  var conteudo=txt.innerText||txt.textContent;
-  paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;color:#374151;">'+conteudo.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>',data:new Date().toLocaleDateString('pt-BR')});
-  adicionarAoMenu(nome,'📄',paginas.length-1);
-  renderPaginas();
-  var fb=document.getElementById('pdf-feedback');
-  if(fb){fb.textContent='✓ Página "'+nome+'" criada! Acesse em "Criar Páginas" para editar.';fb.style.display='block';}
+function importarCSV(input) {
+  if (!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try {
+      var linhas=e.target.result.split('\n').filter(function(l){ return l.trim(); });
+      if (linhas.length<2) { alert('CSV vazio.'); return; }
+      var header=parseCSVLinha(linhas[0]).map(function(h){ return h.trim().toLowerCase(); });
+      function col(nomes) { for(var i=0;i<nomes.length;i++){ var idx=header.indexOf(nomes[i].toLowerCase()); if(idx>-1) return idx; } return -1; }
+      function val(linha,nomes) { var idx=col(nomes); return idx>-1?(linha[idx]||'').trim():''; }
+      var novos=[];
+      for (var i=1;i<linhas.length;i++) {
+        var c=parseCSVLinha(linhas[i]);
+        var m={nomeRegistro:val(c,['nome completo de registro','nome de registro','nome']),email:val(c,['email','e-mail']),celular:val(c,['fone celular','celular','telefone']),cpf:val(c,['cpf']),rg:val(c,['rg']),nascimento:val(c,['data de nascimento','nascimento']),estadoCivil:val(c,['estado civil']),instagram:val(c,['instagram']),profissao:val(c,['profissão','profissao']),escolaridade:val(c,['escolaridade']),nivel:val(c,['nivelamento','nível espiritual','nivel']),maePaiSanto:val(c,['mãe/pai de santo','mae de santo'])||'Mãe Rosi de Oxum',guiaFrente:val(c,['guia de frente','guia']),orixas:val(c,['orixás','orixas']),saudePsico:val(c,['acompanhamento psicológico','psicologico']),saudeProblema:val(c,['problema de saúde','saude']),status:val(c,['status'])||'pendente',perfil:'membro',dataCadastro:new Date().toLocaleDateString('pt-BR'),origem:'CSV Notion/Tally'};
+        if(m.nomeRegistro||m.email) novos.push(m);
+      }
+      if (novos.length===0) { alert('Nenhum registro válido.'); return; }
+      var atual=getMembros(); var add=0,upd=0;
+      novos.forEach(function(m){ if(m.email){ var idx=atual.findIndex(function(a){ return a.email===m.email; }); if(idx>-1){atual[idx]=Object.assign({},atual[idx],m);upd++;}else{atual.push(m);add++;} }else{atual.push(m);add++;} });
+      setMembros(atual); renderMembros(); alert('✅ '+add+' adicionado(s), '+upd+' atualizado(s). Total: '+atual.length);
+    } catch(e) { alert('Erro CSV: '+e.message); }
+  };
+  reader.readAsText(input.files[0],'UTF-8');
+}
+function parseCSVLinha(linha) {
+  var res=[],cur='',inQ=false;
+  for(var i=0;i<linha.length;i++){var c=linha[i];if(c==='"'){if(inQ&&linha[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if((c===','||c===';')&&!inQ){res.push(cur);cur='';}else cur+=c;}
+  res.push(cur); return res;
 }
 
-function copiarTexto(){
-  var txt=document.getElementById('pdf-text');if(!txt)return;
-  navigator.clipboard.writeText(txt.innerText||txt.textContent).then(function(){
-    var fb=document.getElementById('pdf-feedback');
-    if(fb){fb.textContent='✓ Texto copiado!';fb.style.display='block';setTimeout(function(){fb.style.display='none';},2000);}
+// ==============================
+// MEU CADASTRO (membro)
+// ==============================
+function toggleNomeAtual() { var v=document.getElementById('c-alterou-nome'); if(v) document.getElementById('c-nome-atual-wrap').style.display=v.value==='sim'?'block':'none'; }
+function toggleSaudeObs() { var v=document.getElementById('c-saude-problema'); if(v) document.getElementById('c-saude-obs-wrap').style.display=v.value==='sim'?'block':'none'; }
+function toggleTrajetoria() { var v=document.getElementById('c-outro-terreiro'); if(v) document.getElementById('c-trajetoria-wrap').style.display=v.value==='sim'?'block':'none'; }
+function toggleResponsavel() { var v=document.getElementById('c-menor'); if(v) document.getElementById('c-responsavel-wrap').style.display=v.value==='sim'?'block':'none'; }
+function previewSelfie(input) {
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){ document.getElementById('c-selfie-img').src=e.target.result; document.getElementById('c-selfie-preview').style.display='block'; window._selfieData=e.target.result; };
+  reader.readAsDataURL(input.files[0]);
+}
+function salvarMeuCadastro() {
+  var erros=[];
+  [['c-nome-registro','Nome de registro'],['c-alterou-nome','Alteração de nome'],['c-cpf','CPF'],['c-rg','RG'],['c-rg-org','Órgão Expedidor'],['c-nascimento','Data de Nascimento'],['c-estado-civil','Estado Civil'],['c-email','E-mail'],['c-instagram','Instagram'],['c-celular','Celular'],['c-saude-psico','Acompanhamento psicológico'],['c-saude-problema','Problema de saúde'],['c-profissao','Profissão'],['c-escolaridade','Escolaridade'],['c-mae-pai-santo','Mãe/Pai de Santo'],['c-nivel','Nível espiritual'],['c-outro-terreiro','Frequentou outro terreiro'],['c-menor','Menor de idade']].forEach(function(par){
+    var el=document.getElementById(par[0]); if(!el||!el.value.trim()) erros.push(par[1]);
   });
+  if(!document.getElementById('c-declaro').checked) erros.push('Declaração de veracidade');
+  if(!document.getElementById('c-regimento').checked) erros.push('Confirmação do Regimento');
+  var errosEl=document.getElementById('c-erros');
+  if(erros.length>0){
+    errosEl.style.display='block';
+    errosEl.innerHTML='<div class="avt">⚠️ Preencha os campos obrigatórios:</div><ul style="margin-top:6px;padding-left:20px;">'+erros.map(function(e){ return '<li>'+e+'</li>'; }).join('')+'</ul>';
+    errosEl.scrollIntoView({behavior:'smooth',block:'center'}); return;
+  }
+  errosEl.style.display='none';
+  function gv(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+  function gc(id){ var el=document.getElementById(id); return el?el.checked:false; }
+  var m={nomeRegistro:gv('c-nome-registro'),alterouNome:gv('c-alterou-nome'),nomeAtual:gv('c-nome-atual'),nomeTerreiro:gv('c-nome-terreiro'),email:gv('c-email').toLowerCase(),cpf:gv('c-cpf'),rg:gv('c-rg'),rgOrg:gv('c-rg-org'),nascimento:gv('c-nascimento'),estadoCivil:gv('c-estado-civil'),celular:gv('c-celular'),instagram:gv('c-instagram'),profissao:gv('c-profissao'),escolaridade:gv('c-escolaridade'),endereco:gv('c-endereco'),cidade:gv('c-cidade'),uf:gv('c-uf'),cep:gv('c-cep'),saudePsico:gv('c-saude-psico'),saudeProblema:gv('c-saude-problema'),saudeObs:gv('c-saude-obs'),maePaiSanto:gv('c-mae-pai-santo'),guiaFrente:gv('c-guia-frente'),orixas:gv('c-orixas'),padrinhosCarnais:gv('c-padrinhos-carnais'),padrinhosEsp:gv('c-padrinhos-esp'),nivel:gv('c-nivel'),outroTerreiro:gv('c-outro-terreiro'),trajetoria:gv('c-trajetoria'),intAtendimento:gc('c-int-atendimento'),intSuporte:gc('c-int-suporte'),intAuxilio:gc('c-int-auxilio'),menor:gv('c-menor'),responsavelNome:gv('c-responsavel-nome'),foto:window._selfieData||null,status:'pendente',perfil:'membro',dataCadastro:new Date().toLocaleDateString('pt-BR'),origem:'Portal TUCIC'};
+  var membros=getMembros(); var idx=membros.findIndex(function(mb){ return mb.email===m.email; });
+  if(idx>-1){m.status=membros[idx].status;m.perfil=membros[idx].perfil;membros[idx]=m;}else membros.push(m);
+  setMembros(membros);
+  document.getElementById('cadastro-sucesso').style.display='block';
+  document.getElementById('cadastro-form').style.display='none';
+  document.getElementById('cadastro-sucesso').scrollIntoView({behavior:'smooth'});
+}
+function preCarregarCadastro() {
+  var sessao=JSON.parse(localStorage.getItem('tucic_sessao')||'{}');
+  if(!sessao.email) return;
+  var m=getMembros().find(function(mb){ return mb.email===sessao.email; });
+  if(!m) return;
+  var map={'c-nome-registro':m.nomeRegistro,'c-nome-atual':m.nomeAtual,'c-nome-terreiro':m.nomeTerreiro,'c-email':m.email,'c-cpf':m.cpf,'c-rg':m.rg,'c-rg-org':m.rgOrg,'c-nascimento':m.nascimento,'c-estado-civil':m.estadoCivil,'c-celular':m.celular,'c-instagram':m.instagram,'c-profissao':m.profissao,'c-escolaridade':m.escolaridade,'c-endereco':m.endereco,'c-cidade':m.cidade,'c-uf':m.uf,'c-cep':m.cep,'c-saude-psico':m.saudePsico,'c-saude-problema':m.saudeProblema,'c-saude-obs':m.saudeObs,'c-mae-pai-santo':m.maePaiSanto,'c-guia-frente':m.guiaFrente,'c-orixas':m.orixas,'c-padrinhos-carnais':m.padrinhosCarnais,'c-padrinhos-esp':m.padrinhosEsp,'c-nivel':m.nivel,'c-outro-terreiro':m.outroTerreiro,'c-trajetoria':m.trajetoria,'c-menor':m.menor,'c-responsavel-nome':m.responsavelNome,'c-alterou-nome':m.alterouNome};
+  Object.keys(map).forEach(function(id){ var el=document.getElementById(id); if(el&&map[id]) el.value=map[id]; });
+  if(m.intAtendimento) document.getElementById('c-int-atendimento').checked=true;
+  if(m.intSuporte)     document.getElementById('c-int-suporte').checked=true;
+  if(m.intAuxilio)     document.getElementById('c-int-auxilio').checked=true;
+  if(m.foto){window._selfieData=m.foto;document.getElementById('c-selfie-img').src=m.foto;document.getElementById('c-selfie-preview').style.display='block';}
+  toggleNomeAtual();toggleSaudeObs();toggleTrajetoria();toggleResponsavel();
 }
 
 // ==============================
 // FOTO DE PERFIL
 // ==============================
-function atualizarAvatars(fotoDataUrl, ini) {
-  // Sidebar
-  var sbAv = document.getElementById('sb-av');
-  var sbIni = document.getElementById('sb-av-ini');
-  if (sbAv) {
-    sbAv.style.background = fotoDataUrl ? 'transparent' : 'var(--azul)';
-    if (fotoDataUrl) {
-      sbAv.style.backgroundImage = 'url(' + fotoDataUrl + ')';
-      sbAv.style.backgroundSize = 'cover';
-      sbAv.style.backgroundPosition = 'center';
-      if (sbIni) sbIni.style.display = 'none';
-    } else {
-      sbAv.style.backgroundImage = '';
-      if (sbIni) { sbIni.style.display = ''; sbIni.textContent = ini || ''; }
-    }
-  }
-  // Header
-  var hdrAv = document.getElementById('hdr-avatar');
-  if (hdrAv) {
-    if (fotoDataUrl) {
-      hdrAv.style.backgroundImage = 'url(' + fotoDataUrl + ')';
-      hdrAv.style.backgroundSize = 'cover';
-      hdrAv.style.backgroundPosition = 'center';
-      hdrAv.textContent = '';
-    } else {
-      hdrAv.style.backgroundImage = '';
-      hdrAv.textContent = ini ? ini.charAt(0) : '';
-    }
-  }
-  // Modal de perfil
-  var pa = document.getElementById('perfil-avatar-big');
-  var pi = document.getElementById('perfil-ini');
-  if (pa) {
-    if (fotoDataUrl) {
-      pa.style.backgroundImage = 'url(' + fotoDataUrl + ')';
-      pa.style.backgroundSize = 'cover';
-      pa.style.backgroundPosition = 'center';
-      if (pi) pi.style.display = 'none';
-    } else {
-      pa.style.backgroundImage = '';
-      if (pi) { pi.style.display = ''; pi.textContent = ini || ''; }
-    }
-  }
+function atualizarAvatars(foto, ini) {
+  var sbAv=document.getElementById('sb-av'); var sbIni=document.getElementById('sb-av-ini');
+  if(sbAv){if(foto){sbAv.style.backgroundImage='url('+foto+')';sbAv.style.backgroundSize='cover';sbAv.style.backgroundPosition='center';sbAv.style.background='';if(sbIni)sbIni.style.display='none';}else{sbAv.style.backgroundImage='';sbAv.style.background='var(--azul)';if(sbIni){sbIni.style.display='';sbIni.textContent=ini||'';}}}
+  var hdrAv=document.getElementById('hdr-avatar');
+  if(hdrAv){if(foto){hdrAv.style.backgroundImage='url('+foto+')';hdrAv.style.backgroundSize='cover';hdrAv.style.backgroundPosition='center';hdrAv.textContent='';}else{hdrAv.style.backgroundImage='';hdrAv.textContent=ini?ini.charAt(0):'';}};
+  var pa=document.getElementById('perfil-avatar-big'); var pi=document.getElementById('perfil-ini');
+  if(pa){if(foto){pa.style.backgroundImage='url('+foto+')';pa.style.backgroundSize='cover';pa.style.backgroundPosition='center';if(pi)pi.style.display='none';}else{pa.style.backgroundImage='';if(pi){pi.style.display='';pi.textContent=ini||'';}}}
 }
-
 function abrirPerfil() {
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-  document.getElementById('perfil-nome').textContent = sessao.name || '';
-  document.getElementById('perfil-cargo').textContent = sessao.role || '';
-  document.getElementById('perfil-ini').textContent = sessao.ini || '';
-  // Foto salva
-  var foto = localStorage.getItem('tucic_foto_' + (sessao.email || ''));
-  var pa = document.getElementById('perfil-avatar-big');
-  var pi = document.getElementById('perfil-ini');
-  if (foto) {
-    pa.style.backgroundImage = 'url(' + foto + ')';
-    pa.style.backgroundSize = 'cover';
-    pa.style.backgroundPosition = 'center';
-    if (pi) pi.style.display = 'none';
-  } else {
-    pa.style.backgroundImage = '';
-    if (pi) pi.style.display = '';
-  }
+  var sessao=JSON.parse(localStorage.getItem('tucic_sessao')||'{}');
+  document.getElementById('perfil-nome').textContent=sessao.name||'';
+  document.getElementById('perfil-cargo').textContent=sessao.role||'';
+  document.getElementById('perfil-ini').textContent=sessao.ini||'';
+  var foto=sessao.email?localStorage.getItem('tucic_foto_'+sessao.email):null;
+  var pa=document.getElementById('perfil-avatar-big'); var pi=document.getElementById('perfil-ini');
+  if(foto){pa.style.backgroundImage='url('+foto+')';pa.style.backgroundSize='cover';pa.style.backgroundPosition='center';if(pi)pi.style.display='none';}
+  else{pa.style.backgroundImage='';if(pi)pi.style.display='';}
   document.getElementById('perfil-modal').classList.add('open');
 }
-
 function carregarFoto(input) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-    if (!sessao.email) return;
-    // Salvar foto no localStorage
-    localStorage.setItem('tucic_foto_' + sessao.email, dataUrl);
+  if(!input.files||!input.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    var sessao=JSON.parse(localStorage.getItem('tucic_sessao')||'{}');
+    if(!sessao.email) return;
+    localStorage.setItem('tucic_foto_'+sessao.email, dataUrl);
     atualizarAvatars(dataUrl, sessao.ini);
-    // Atualizar modal
-    var pa = document.getElementById('perfil-avatar-big');
-    var pi = document.getElementById('perfil-ini');
-    if (pa) { pa.style.backgroundImage = 'url('+dataUrl+')'; pa.style.backgroundSize='cover'; pa.style.backgroundPosition='center'; }
-    if (pi) pi.style.display = 'none';
+    var pa=document.getElementById('perfil-avatar-big'); var pi=document.getElementById('perfil-ini');
+    if(pa){pa.style.backgroundImage='url('+dataUrl+')';pa.style.backgroundSize='cover';pa.style.backgroundPosition='center';}
+    if(pi) pi.style.display='none';
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(input.files[0]);
 }
-
 function removerFoto() {
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-  if (!sessao.email) return;
-  localStorage.removeItem('tucic_foto_' + sessao.email);
-  atualizarAvatars(null, sessao.ini);
-  document.getElementById('foto-input').value = '';
-}
-
-// Restaurar foto ao aplicar sessão
-var _aplicarSessaoOrig = aplicarSessao;
-function aplicarSessao(u) {
-  _aplicarSessaoOrig(u);
-  // Atualizar iniciais no novo sb-av
-  var ini = document.getElementById('sb-av-ini');
-  if (ini) ini.textContent = u.ini;
-  var hdr = document.getElementById('hdr-avatar');
-  if (hdr) hdr.textContent = u.ini ? u.ini.charAt(0) : '';
-  // Restaurar foto
-  setTimeout(function() {
-    var foto = localStorage.getItem('tucic_foto_' + u.email);
-    atualizarAvatars(foto || null, u.ini);
-  }, 50);
-}
-
-// Fechar modal clicando fora
-document.getElementById('perfil-modal').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('open');
-});
-
-
-// ==============================
-// GESTÃO DE MEMBROS
-// ==============================
-
-// Carregar membros do localStorage
-function getMembros() {
-  try { return JSON.parse(localStorage.getItem('tucic_membros') || '[]'); }
-  catch(e) { return []; }
-}
-function setMembros(lista) {
-  localStorage.setItem('tucic_membros', JSON.stringify(lista));
-}
-
-function memTab(tab, el) {
-  document.querySelectorAll('.mem-tab').forEach(function(t){ t.classList.remove('active'); });
-  if(el) el.classList.add('active');
-  document.getElementById('mem-lista-view').style.display = tab==='lista' ? 'block' : 'none';
-  document.getElementById('mem-fichas-view').style.display = tab==='fichas' ? 'block' : 'none';
-  if(tab==='fichas') renderFichas();
-}
-
-function renderMembros() {
-  var membros = getMembros();
-  var busca = (document.getElementById('mem-busca')||{value:''}).value.toLowerCase();
-  var filtro = (document.getElementById('mem-filtro')||{value:'todos'}).value;
-
-  var filtrados = membros.filter(function(m) {
-    var matchBusca = !busca ||
-      (m.nomeTerreiro||m.nomeRegistro||'').toLowerCase().includes(busca) ||
-      (m.email||'').toLowerCase().includes(busca);
-    var matchFiltro = filtro==='todos' || m.status===filtro;
-    return matchBusca && matchFiltro;
-  });
-
-  var container = document.getElementById('mem-lista-container');
-  var empty = document.getElementById('mem-empty');
-  if(!container) return;
-
-  if(filtrados.length===0) {
-    container.innerHTML = '';
-    if(empty) empty.style.display='block';
-    return;
-  }
-  if(empty) empty.style.display='none';
-
-  container.innerHTML = filtrados.map(function(m, i) {
-    var realIdx = membros.indexOf(m);
-    var statusBadge = m.status==='ativo'
-      ? '<span class="mem-badge badge-ativo">✅ Ativo</span>'
-      : m.status==='inativo'
-      ? '<span class="mem-badge badge-inativo">❌ Inativo</span>'
-      : '<span class="mem-badge badge-pendente">⏳ Pendente</span>';
-    var perfilBadge = m.perfil==='admin'
-      ? '<span class="mem-badge badge-admin">⚙️ Admin</span>'
-      : '<span class="mem-badge badge-membro">👤 Membro</span>';
-    var nome = m.nomeTerreiro || m.nomeRegistro || m.email || 'Sem nome';
-    var iniciais = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-    return '<div class="mem-card">'
-      + '<div class="mem-card-header">'
-      + '<div class="mem-avatar">' + (m.foto ? '<img src="'+m.foto+'">' : iniciais) + '</div>'
-      + '<div style="flex:1;">'
-      + '<div class="mem-name">' + nome + '</div>'
-      + '<div class="mem-email">' + (m.email||'') + '</div>'
-      + '<div class="mem-badges">' + statusBadge + perfilBadge
-      + (m.nivel ? '<span class="mem-badge badge-membro">'+m.nivel+'</span>' : '')
-      + '</div></div></div>'
-      + '<div class="mem-detail-grid">'
-      + (m.celular ? '<div class="mem-detail-item"><span class="mem-detail-label">Celular</span><span class="mem-detail-value">'+m.celular+'</span></div>' : '')
-      + (m.orixas ? '<div class="mem-detail-item"><span class="mem-detail-label">Orixás</span><span class="mem-detail-value">'+m.orixas+'</span></div>' : '')
-      + (m.guiaFrente ? '<div class="mem-detail-item"><span class="mem-detail-label">Guia de Frente</span><span class="mem-detail-value">'+m.guiaFrente+'</span></div>' : '')
-      + (m.maePaiSanto ? '<div class="mem-detail-item"><span class="mem-detail-label">Mãe/Pai de Santo</span><span class="mem-detail-value">'+m.maePaiSanto+'</span></div>' : '')
-      + '</div>'
-      + '<div class="mem-card-actions">'
-      + (m.status==='pendente' ? '<button class="btn-sm btn-edit" onclick="aprovarMembro('+realIdx+')">✅ Aprovar</button>' : '')
-      + '<button class="btn-sm btn-edit" onclick="editarMembro('+realIdx+')">✏️ Editar</button>'
-      + (m.status==='ativo' ? '<button class="btn-sm btn-del" onclick="toggleStatusMembro('+realIdx+','inativo')">❌ Desativar</button>'
-        : m.status==='inativo' ? '<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+realIdx+','ativo')">✅ Reativar</button>'
-        : '')
-      + '<button class="btn-sm btn-del" onclick="excluirMembro('+realIdx+')">🗑 Excluir</button>'
-      + '</div></div>';
-  }).join('');
-}
-
-function renderFichas() {
-  var membros = getMembros();
-  var container = document.getElementById('mem-fichas-container');
-  if(!container) return;
-  if(membros.length===0) { container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted2);">Nenhum membro cadastrado.</div>'; return; }
-
-  container.innerHTML = membros.map(function(m, i) {
-    var nome = m.nomeTerreiro || m.nomeRegistro || m.email || 'Sem nome';
-    var iniciais = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-    var campos = [
-      ['Nome de Registro', m.nomeRegistro],
-      ['Nome Atual', m.nomeAtual],
-      ['Nome no Terreiro', m.nomeTerreiro],
-      ['E-mail', m.email],
-      ['CPF', m.cpf],
-      ['RG', m.rg + (m.rgOrg?' — '+m.rgOrg:'')],
-      ['Nascimento', m.nascimento],
-      ['Estado Civil', m.estadoCivil],
-      ['Celular', m.celular],
-      ['Instagram', m.instagram],
-      ['Profissão', m.profissao],
-      ['Escolaridade', m.escolaridade],
-      ['Endereço', m.endereco],
-      ['CEP/UF', (m.cep||'') + (m.uf?' — '+m.uf:'')],
-      ['Acomp. Psicológico', m.saudePsico],
-      ['Problema de Saúde', m.saudeProblema],
-      ['Obs. Saúde', m.saudeObs],
-      ['Mãe/Pai de Santo', m.maePaiSanto],
-      ['Guia de Frente', m.guiaFrente],
-      ['Orixás de Cabeça', m.orixas],
-      ['Padrinhos Carnais', m.padrinhosCarnais],
-      ['Padrinhos Espirituais', m.padrinhosEsp],
-      ['Nível Espiritual', m.nivel],
-      ['Outro Terreiro', m.outroTerreiro],
-      ['Trajetória', m.trajetoria],
-      ['Interesse Atendimento', m.intAtendimento ? 'Sim' : ''],
-      ['Interesse Suporte', m.intSuporte ? 'Sim' : ''],
-      ['Interesse Auxílio', m.intAuxilio ? 'Sim' : ''],
-      ['Status', m.status],
-      ['Perfil', m.perfil],
-      ['Observações', m.obs],
-    ].filter(function(c){ return c[1]; });
-
-    return '<div class="mem-card" style="margin-bottom:16px;">'
-      + '<div class="mem-card-header">'
-      + '<div class="mem-avatar" style="width:56px;height:56px;font-size:18px;">' + (m.foto ? '<img src="'+m.foto+'">' : iniciais) + '</div>'
-      + '<div><div class="mem-name" style="font-size:16px;">'+nome+'</div>'
-      + '<div class="mem-email">'+m.email+'</div>'
-      + '<div class="mem-badges" style="margin-top:5px;">'
-      + (m.status==='ativo'?'<span class="mem-badge badge-ativo">✅ Ativo</span>':m.status==='inativo'?'<span class="mem-badge badge-inativo">❌ Inativo</span>':'<span class="mem-badge badge-pendente">⏳ Pendente</span>')
-      + (m.perfil==='admin'?'<span class="mem-badge badge-admin">⚙️ Admin</span>':'<span class="mem-badge badge-membro">👤 Membro</span>')
-      + '</div></div>'
-      + '<div style="margin-left:auto;"><button class="btn-sm btn-edit" onclick="editarMembro('+i+')">✏️ Editar</button></div>'
-      + '</div>'
-      + '<div class="mem-detail-grid" style="margin-top:10px;padding-top:10px;border-top:1px solid var(--borda);">'
-      + campos.map(function(c){ return '<div class="mem-detail-item"><span class="mem-detail-label">'+c[0]+'</span><span class="mem-detail-value">'+c[1]+'</span></div>'; }).join('')
-      + '</div></div>';
-  }).join('');
-}
-
-function abrirCadastroMembro(preenchido) {
-  document.getElementById('membro-modal-titulo').textContent = 'Novo Membro';
-  document.getElementById('membro-id').value = '';
-  // Limpar campos
-  var ids = ['m-nome-registro','m-nome-atual','m-nome-terreiro','m-email','m-cpf','m-rg','m-rg-org',
-    'm-nascimento','m-celular','m-instagram','m-profissao','m-endereco','m-cep','m-uf',
-    'm-saude-obs','m-guia-frente','m-orixas','m-padrinhos-carnais','m-padrinhos-esp','m-trajetoria','m-obs','m-senha'];
-  ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  var sels = ['m-estado-civil','m-escolaridade','m-saude-psico','m-saude-problema','m-mae-pai-santo','m-nivel','m-outro-terreiro'];
-  sels.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('m-mae-pai-santo').value = 'Mãe Rosi de Oxum';
-  ['m-int-atendimento','m-int-suporte','m-int-auxilio'].forEach(function(id){ var el=document.getElementById(id); if(el) el.checked=false; });
-  document.getElementById('m-status').value = 'pendente';
-  document.getElementById('m-perfil').value = 'membro';
-  if(preenchido) preencherFormMembro(preenchido);
-  document.getElementById('membro-modal').classList.add('open');
-}
-
-function preencherFormMembro(m) {
-  var map = {
-    'm-nome-registro':m.nomeRegistro,'m-nome-atual':m.nomeAtual,'m-nome-terreiro':m.nomeTerreiro,
-    'm-email':m.email,'m-cpf':m.cpf,'m-rg':m.rg,'m-rg-org':m.rgOrg,'m-nascimento':m.nascimento,
-    'm-celular':m.celular,'m-instagram':m.instagram,'m-profissao':m.profissao,'m-endereco':m.endereco,
-    'm-cep':m.cep,'m-uf':m.uf,'m-saude-psico':m.saudePsico,'m-saude-problema':m.saudeProblema,
-    'm-saude-obs':m.saudeObs,'m-estado-civil':m.estadoCivil,'m-escolaridade':m.escolaridade,
-    'm-mae-pai-santo':m.maePaiSanto,'m-guia-frente':m.guiaFrente,'m-orixas':m.orixas,
-    'm-padrinhos-carnais':m.padrinhosCarnais,'m-padrinhos-esp':m.padrinhosEsp,'m-nivel':m.nivel,
-    'm-outro-terreiro':m.outroTerreiro,'m-trajetoria':m.trajetoria,'m-obs':m.obs,
-    'm-status':m.status,'m-perfil':m.perfil,'m-senha':m.senha
-  };
-  Object.keys(map).forEach(function(id){
-    var el=document.getElementById(id);
-    if(el && map[id]) el.value = map[id];
-  });
-  if(m.intAtendimento) document.getElementById('m-int-atendimento').checked=true;
-  if(m.intSuporte)     document.getElementById('m-int-suporte').checked=true;
-  if(m.intAuxilio)     document.getElementById('m-int-auxilio').checked=true;
-}
-
-function editarMembro(idx) {
-  var membros = getMembros();
-  var m = membros[idx];
-  if(!m) return;
-  document.getElementById('membro-modal-titulo').textContent = 'Editar Membro';
-  document.getElementById('membro-id').value = idx;
-  abrirCadastroMembro(m);
-}
-
-function salvarMembro() {
-  var email = document.getElementById('m-email').value.trim();
-  var nomeReg = document.getElementById('m-nome-registro').value.trim();
-  if(!email && !nomeReg) { alert('Preencha ao menos o nome de registro ou o e-mail.'); return; }
-
-  var m = {
-    nomeRegistro: nomeReg,
-    nomeAtual: document.getElementById('m-nome-atual').value.trim(),
-    nomeTerreiro: document.getElementById('m-nome-terreiro').value.trim(),
-    email: email,
-    cpf: document.getElementById('m-cpf').value.trim(),
-    rg: document.getElementById('m-rg').value.trim(),
-    rgOrg: document.getElementById('m-rg-org').value.trim(),
-    nascimento: document.getElementById('m-nascimento').value,
-    estadoCivil: document.getElementById('m-estado-civil').value,
-    celular: document.getElementById('m-celular').value.trim(),
-    instagram: document.getElementById('m-instagram').value.trim(),
-    profissao: document.getElementById('m-profissao').value.trim(),
-    escolaridade: document.getElementById('m-escolaridade').value,
-    endereco: document.getElementById('m-endereco').value.trim(),
-    cep: document.getElementById('m-cep').value.trim(),
-    uf: document.getElementById('m-uf').value.trim(),
-    saudePsico: document.getElementById('m-saude-psico').value,
-    saudeProblema: document.getElementById('m-saude-problema').value,
-    saudeObs: document.getElementById('m-saude-obs').value.trim(),
-    maePaiSanto: document.getElementById('m-mae-pai-santo').value.trim(),
-    guiaFrente: document.getElementById('m-guia-frente').value.trim(),
-    orixas: document.getElementById('m-orixas').value.trim(),
-    padrinhosCarnais: document.getElementById('m-padrinhos-carnais').value.trim(),
-    padrinhosEsp: document.getElementById('m-padrinhos-esp').value.trim(),
-    nivel: document.getElementById('m-nivel').value,
-    outroTerreiro: document.getElementById('m-outro-terreiro').value,
-    trajetoria: document.getElementById('m-trajetoria').value.trim(),
-    intAtendimento: document.getElementById('m-int-atendimento').checked,
-    intSuporte: document.getElementById('m-int-suporte').checked,
-    intAuxilio: document.getElementById('m-int-auxilio').checked,
-    status: document.getElementById('m-status').value,
-    perfil: document.getElementById('m-perfil').value,
-    senha: document.getElementById('m-senha').value.trim(),
-    obs: document.getElementById('m-obs').value.trim(),
-    dataCadastro: new Date().toLocaleDateString('pt-BR'),
-  };
-
-  var membros = getMembros();
-  var idxEdit = document.getElementById('membro-id').value;
-
-  if(idxEdit !== '') {
-    // Preservar foto se existir
-    if(membros[idxEdit] && membros[idxEdit].foto) m.foto = membros[idxEdit].foto;
-    membros[parseInt(idxEdit)] = m;
-  } else {
-    membros.push(m);
-  }
-
-  // Sincronizar com USERS se tiver e-mail e senha
-  if(m.email && m.senha) {
-    var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
-    var ini = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-    USERS[m.email] = {
-      pass: m.senha, name: nome, role: m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO',
-      ini: ini, admin: m.perfil==='admin'
-    };
-  }
-
-  setMembros(membros);
-  document.getElementById('membro-modal').classList.remove('open');
-  renderMembros();
-}
-
-function aprovarMembro(idx) {
-  var membros = getMembros();
-  if(!membros[idx]) return;
-  membros[idx].status = 'ativo';
-  setMembros(membros);
-  renderMembros();
-}
-
-function toggleStatusMembro(idx, novoStatus) {
-  var membros = getMembros();
-  if(!membros[idx]) return;
-  membros[idx].status = novoStatus;
-  setMembros(membros);
-  renderMembros();
-}
-
-function excluirMembro(idx) {
-  var membros = getMembros();
-  var nome = membros[idx] ? (membros[idx].nomeTerreiro || membros[idx].nomeRegistro || membros[idx].email) : '';
-  if(!confirm('Excluir membro "'+nome+'"? Esta ação não pode ser desfeita.')) return;
-  // Remover do USERS também
-  if(membros[idx] && membros[idx].email) delete USERS[membros[idx].email];
-  membros.splice(idx, 1);
-  setMembros(membros);
-  renderMembros();
-}
-
-function exportarMembros() {
-  var membros = getMembros();
-  var json = JSON.stringify(membros, null, 2);
-  var blob = new Blob([json], {type:'application/json'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url; a.download = 'TUCIC_membros_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click(); URL.revokeObjectURL(url);
-}
-
-function importarMembros(input) {
-  if(!input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var dados = JSON.parse(e.target.result);
-      if(!Array.isArray(dados)) { alert('Arquivo inválido.'); return; }
-      var atual = getMembros();
-      // Merge: adicionar novos, atualizar existentes por e-mail
-      dados.forEach(function(m) {
-        var idx = atual.findIndex(function(a){ return a.email && a.email===m.email; });
-        if(idx > -1) atual[idx] = m;
-        else atual.push(m);
-      });
-      setMembros(atual);
-      renderMembros();
-      alert('✅ '+dados.length+' membro(s) importado(s)!');
-    } catch(e) { alert('Erro ao importar: '+e.message); }
-  };
-  reader.readAsText(input.files[0]);
-}
-
-// Fechar modal clicando fora
-document.getElementById('membro-modal').addEventListener('click', function(e){
-  if(e.target===this) this.classList.remove('open');
-});
-
-// Renderizar quando a seção de membros for aberta
-var _secOrig = sec;
-function sec(id, el) {
-  _secOrig(id, el);
-  if(id === 'admin-membros') {
-    setTimeout(renderMembros, 50);
-  }
-}
-
-
-// ==============================
-// IMPORTAR CSV DO NOTION / TALLY
-// ==============================
-function importarCSV(input) {
-  if (!input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      var texto = e.target.result;
-      var linhas = texto.split('\n').filter(function(l){ return l.trim(); });
-      if (linhas.length < 2) { alert('CSV vazio ou inválido.'); return; }
-
-      // Parsear cabeçalho
-      var header = parseCSVLinha(linhas[0]).map(function(h){ return h.trim().toLowerCase(); });
-
-      // Mapeamento de colunas do Tally/Notion → campos internos
-      // Aceita variações de nome de coluna
-      var MAP = {
-        nomeRegistro:     ['nome completo de registro','nome de registro','nome registro','nome_registro','first name','nome'],
-        nomeAtual:        ['nome atual','nome completo atual','nome_atual'],
-        nomeTerreiro:     ['nome no terreiro','nome terreiro','nome_terreiro','apelido'],
-        email:            ['email','e-mail','e mail'],
-        cpf:              ['cpf'],
-        rg:               ['rg'],
-        rgOrg:            ['órgão expedidor','orgao expedidor','órgão','orgao'],
-        nascimento:       ['data de nascimento','nascimento','data nascimento','birthday'],
-        estadoCivil:      ['estado civil','estado_civil','civil status'],
-        celular:          ['fone celular','celular','telefone','phone','fone'],
-        instagram:        ['instagram'],
-        profissao:        ['profissão','profissao','occupation'],
-        escolaridade:     ['escolaridade','education'],
-        endereco:         ['endereço residencial completo','endereço','endereco','address'],
-        cidade:           ['cidade','city'],
-        uf:               ['uf','estado','state'],
-        cep:              ['cep','postal code','zip'],
-        saudePsico:       ['acompanhamento psicológico','acompanhamento psicologico','psicológico','psicologico'],
-        saudeProblema:    ['problema de saúde','problema de saude','saúde','saude'],
-        saudeObs:         ['observações de saúde','obs saude','health notes'],
-        maePaiSanto:      ['mãe/pai de santo','mae pai santo','mae de santo','pai de santo'],
-        guiaFrente:       ['guia de frente','guia frente','guia'],
-        orixas:           ['orixás de cabeça','orixas de cabeca','orixás','orixas'],
-        padrinhosCarnais: ['padrinhos carnais','padrinho carnal'],
-        padrinhosEsp:     ['padrinhos espirituais','padrinho espiritual'],
-        nivel:            ['nivelamento','nível espiritual','nivel espiritual','nivel','level'],
-        outroTerreiro:    ['outro terreiro','frequentou outro terreiro'],
-        trajetoria:       ['trajetória','trajetoria','trajectory'],
-        intAtendimento:   ['médium de atendimento','medium de atendimento','atendimento'],
-        intSuporte:       ['médium de suporte','medium de suporte','suporte'],
-        intAuxilio:       ['médium de auxílio','medium de auxilio','auxílio','auxilio'],
-        obs:              ['observações','observacoes','notes','obs'],
-        status:           ['status'],
-        perfil:           ['perfil','role'],
-      };
-
-      // Função para encontrar índice da coluna
-      function colIdx(campo) {
-        var variantes = MAP[campo] || [campo];
-        for (var i = 0; i < variantes.length; i++) {
-          var idx = header.indexOf(variantes[i]);
-          if (idx > -1) return idx;
-          // Busca parcial
-          for (var j = 0; j < header.length; j++) {
-            if (header[j].includes(variantes[i]) || variantes[i].includes(header[j])) return j;
-          }
-        }
-        return -1;
-      }
-
-      var novos = [];
-      for (var i = 1; i < linhas.length; i++) {
-        var cols = parseCSVLinha(linhas[i]);
-        if (!cols.length) continue;
-        function val(campo) {
-          var idx = colIdx(campo);
-          return idx > -1 ? (cols[idx] || '').trim() : '';
-        }
-        var m = {
-          nomeRegistro:     val('nomeRegistro'),
-          nomeAtual:        val('nomeAtual'),
-          nomeTerreiro:     val('nomeTerreiro'),
-          email:            val('email'),
-          cpf:              val('cpf'),
-          rg:               val('rg'),
-          rgOrg:            val('rgOrg'),
-          nascimento:       val('nascimento'),
-          estadoCivil:      val('estadoCivil'),
-          celular:          val('celular'),
-          instagram:        val('instagram'),
-          profissao:        val('profissao'),
-          escolaridade:     val('escolaridade'),
-          endereco:         val('endereco') || (val('cidade') ? val('endereco')+', '+val('cidade') : ''),
-          cep:              val('cep'),
-          uf:               val('uf'),
-          saudePsico:       val('saudePsico'),
-          saudeProblema:    val('saudeProblema'),
-          saudeObs:         val('saudeObs'),
-          maePaiSanto:      val('maePaiSanto') || 'Mãe Rosi de Oxum',
-          guiaFrente:       val('guiaFrente'),
-          orixas:           val('orixas'),
-          padrinhosCarnais: val('padrinhosCarnais'),
-          padrinhosEsp:     val('padrinhosEsp'),
-          nivel:            val('nivel'),
-          outroTerreiro:    val('outroTerreiro'),
-          trajetoria:       val('trajetoria'),
-          intAtendimento:   ['sim','yes','true','1'].includes(val('intAtendimento').toLowerCase()),
-          intSuporte:       ['sim','yes','true','1'].includes(val('intSuporte').toLowerCase()),
-          intAuxilio:       ['sim','yes','true','1'].includes(val('intAuxilio').toLowerCase()),
-          status:           val('status') || 'pendente',
-          perfil:           val('perfil') || 'membro',
-          obs:              val('obs'),
-          dataCadastro:     new Date().toLocaleDateString('pt-BR'),
-          origem:           'CSV Notion/Tally',
-        };
-        if (m.nomeRegistro || m.email) novos.push(m);
-      }
-
-      if (novos.length === 0) {
-        alert('Nenhum registro válido encontrado no CSV.\n\nVerifique se o arquivo tem colunas de nome ou e-mail.');
-        return;
-      }
-
-      // Merge com existentes (por e-mail)
-      var atual = getMembros();
-      var adicionados = 0, atualizados = 0;
-      novos.forEach(function(m) {
-        if (m.email) {
-          var idx = atual.findIndex(function(a){ return a.email === m.email; });
-          if (idx > -1) { atual[idx] = Object.assign({}, atual[idx], m); atualizados++; }
-          else { atual.push(m); adicionados++; }
-        } else {
-          atual.push(m); adicionados++;
-        }
-      });
-
-      setMembros(atual);
-      renderMembros();
-      alert('✅ Importação concluída!\n\n' + adicionados + ' novo(s) adicionado(s)\n' + atualizados + ' atualizado(s)\n\nTotal na base: ' + atual.length + ' membro(s)');
-    } catch(err) {
-      alert('Erro ao importar CSV: ' + err.message);
-      console.error(err);
-    }
-  };
-  reader.readAsText(input.files[0], 'UTF-8');
-}
-
-// Parser CSV robusto (lida com aspas, vírgulas e quebras de linha)
-function parseCSVLinha(linha) {
-  var result = [], cur = '', inQuote = false;
-  for (var i = 0; i < linha.length; i++) {
-    var c = linha[i];
-    if (c === '"') {
-      if (inQuote && linha[i+1] === '"') { cur += '"'; i++; }
-      else inQuote = !inQuote;
-    } else if ((c === ',' || c === ';') && !inQuote) {
-      result.push(cur); cur = '';
-    } else {
-      cur += c;
-    }
-  }
-  result.push(cur);
-  return result;
-}
-
-
-// ==============================
-// MEU CADASTRO (formulário do membro)
-// ==============================
-
-function toggleNomeAtual() {
-  var val = document.getElementById('c-alterou-nome').value;
-  var wrap = document.getElementById('c-nome-atual-wrap');
-  if(wrap) wrap.style.display = val === 'sim' ? 'block' : 'none';
-}
-
-document.getElementById('c-menor') && document.getElementById('c-menor').addEventListener('change', function() {
-  var wrap = document.getElementById('c-responsavel-wrap');
-  if(wrap) wrap.style.display = this.checked ? 'block' : 'none';
-});
-
-function previewSelfie(input) {
-  if(!input.files || !input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var img = document.getElementById('c-selfie-img');
-    var prev = document.getElementById('c-selfie-preview');
-    if(img) img.src = e.target.result;
-    if(prev) prev.style.display = 'block';
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-
-function carregarCadastroExistente() {
-  // Preenche o formulário com dados já salvos do membro logado
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
+  var sessao=JSON.parse(localStorage.getItem('tucic_sessao')||'{}');
   if(!sessao.email) return;
-  var membros = getMembros();
-  var m = membros.find(function(m){ return m.email === sessao.email; });
-  if(!m) return;
-
-  var map = {
-    'c-nome-registro': m.nomeRegistro,
-    'c-nome-atual':    m.nomeAtual,
-    'c-nome-terreiro': m.nomeTerreiro,
-    'c-email':         m.email,
-    'c-cpf':           m.cpf,
-    'c-rg':            m.rg,
-    'c-rg-org':        m.rgOrg,
-    'c-nascimento':    m.nascimento,
-    'c-estado-civil':  m.estadoCivil,
-    'c-celular':       m.celular,
-    'c-instagram':     m.instagram,
-    'c-profissao':     m.profissao,
-    'c-endereco':      m.endereco,
-    'c-cidade':        m.cidade,
-    'c-uf':            m.uf,
-    'c-cep':           m.cep,
-    'c-escolaridade':  m.escolaridade,
-    'c-psico':         m.saudePsico,
-    'c-saude':         m.saudeProblema,
-    'c-saude-obs':     m.saudeObs,
-    'c-guia':          m.guiaFrente,
-    'c-orixas':        m.orixas,
-    'c-padrinhos-c':   m.padrinhosCarnais,
-    'c-padrinhos-e':   m.padrinhosEsp,
-    'c-nivel':         m.nivel,
-    'c-outro-terreiro':m.outroTerreiro,
-    'c-trajetoria':    m.trajetoria,
-    'c-responsavel':   m.responsavel,
-  };
-  Object.keys(map).forEach(function(id) {
-    var el = document.getElementById(id);
-    if(el && map[id]) el.value = map[id];
-  });
-  if(m.intAtendimento) { var el=document.getElementById('c-int-atend'); if(el) el.checked=true; }
-  if(m.intSuporte)     { var el=document.getElementById('c-int-sup');   if(el) el.checked=true; }
-  if(m.intAuxilio)     { var el=document.getElementById('c-int-aux');   if(el) el.checked=true; }
-  if(m.alterouNome)    { var el=document.getElementById('c-alterou-nome'); if(el){ el.value=m.alterouNome; toggleNomeAtual(); } }
-  // Selfie
-  if(m.foto) {
-    var img = document.getElementById('c-selfie-img');
-    var prev = document.getElementById('c-selfie-preview');
-    if(img) img.src = m.foto;
-    if(prev) prev.style.display = 'block';
-  }
+  localStorage.removeItem('tucic_foto_'+sessao.email);
+  atualizarAvatars(null, sessao.ini);
+  document.getElementById('foto-input').value='';
 }
-
-function salvarMeuCadastro() {
-  var erros = document.getElementById('c-erros');
-  var msgs = [];
-
-  // Validações obrigatórias
-  var obrig = [
-    ['c-nome-registro', 'Nome completo de registro'],
-    ['c-cpf',           'CPF'],
-    ['c-rg',            'RG'],
-    ['c-rg-org',        'Órgão Expedidor'],
-    ['c-nascimento',    'Data de Nascimento'],
-    ['c-estado-civil',  'Estado Civil'],
-    ['c-email',         'E-mail'],
-    ['c-celular',       'Celular'],
-    ['c-profissao',     'Profissão'],
-    ['c-escolaridade',  'Escolaridade'],
-    ['c-psico',         'Acompanhamento psicológico'],
-    ['c-saude',         'Problema de saúde'],
-    ['c-nivel',         'Nível espiritual'],
-    ['c-outro-terreiro','Frequentou outro terreiro'],
-  ];
-  obrig.forEach(function(par) {
-    var el = document.getElementById(par[0]);
-    if(el && !el.value.trim()) msgs.push(par[1]);
-  });
-  if(!document.getElementById('c-declaro').checked) msgs.push('Declaração de veracidade');
-  if(!document.getElementById('c-regimento').checked) msgs.push('Confirmação do Regimento');
-
-  if(msgs.length > 0) {
-    erros.innerHTML = '<div class="avt">⚠️ Campos obrigatórios não preenchidos:</div><div class="avb">• ' + msgs.join('<br>• ') + '</div>';
-    erros.style.display = 'block';
-    erros.scrollIntoView({behavior:'smooth', block:'center'});
-    return;
-  }
-  erros.style.display = 'none';
-
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-
-  // Capturar selfie se tiver
-  var selfieInput = document.getElementById('c-selfie-input');
-  var selfieImg   = document.getElementById('c-selfie-img');
-  var foto = (selfieImg && selfieImg.src && selfieImg.src !== window.location.href) ? selfieImg.src : null;
-
-  var dados = {
-    nomeRegistro:     document.getElementById('c-nome-registro').value.trim(),
-    alterouNome:      document.getElementById('c-alterou-nome').value,
-    nomeAtual:        document.getElementById('c-nome-atual').value.trim(),
-    nomeTerreiro:     document.getElementById('c-nome-terreiro').value.trim(),
-    email:            document.getElementById('c-email').value.trim(),
-    cpf:              document.getElementById('c-cpf').value.trim(),
-    rg:               document.getElementById('c-rg').value.trim(),
-    rgOrg:            document.getElementById('c-rg-org').value.trim(),
-    nascimento:       document.getElementById('c-nascimento').value,
-    estadoCivil:      document.getElementById('c-estado-civil').value,
-    celular:          document.getElementById('c-celular').value.trim(),
-    instagram:        document.getElementById('c-instagram').value.trim(),
-    profissao:        document.getElementById('c-profissao').value.trim(),
-    endereco:         document.getElementById('c-endereco').value.trim(),
-    cidade:           document.getElementById('c-cidade').value.trim(),
-    uf:               document.getElementById('c-uf').value.trim(),
-    cep:              document.getElementById('c-cep').value.trim(),
-    escolaridade:     document.getElementById('c-escolaridade').value,
-    saudePsico:       document.getElementById('c-psico').value,
-    saudeProblema:    document.getElementById('c-saude').value,
-    saudeObs:         document.getElementById('c-saude-obs').value.trim(),
-    maePaiSanto:      'Mãe Rosi de Oxum',
-    guiaFrente:       document.getElementById('c-guia').value.trim(),
-    orixas:           document.getElementById('c-orixas').value.trim(),
-    padrinhosCarnais: document.getElementById('c-padrinhos-c').value.trim(),
-    padrinhosEsp:     document.getElementById('c-padrinhos-e').value.trim(),
-    nivel:            document.getElementById('c-nivel').value,
-    outroTerreiro:    document.getElementById('c-outro-terreiro').value,
-    trajetoria:       document.getElementById('c-trajetoria').value.trim(),
-    intAtendimento:   document.getElementById('c-int-atend').checked,
-    intSuporte:       document.getElementById('c-int-sup').checked,
-    intAuxilio:       document.getElementById('c-int-aux').checked,
-    menor:            document.getElementById('c-menor').checked,
-    responsavel:      document.getElementById('c-responsavel') ? document.getElementById('c-responsavel').value.trim() : '',
-    foto:             foto,
-    status:           sessao.email ? (getMembros().find(function(m){ return m.email===sessao.email; }) || {}).status || 'pendente' : 'pendente',
-    perfil:           'membro',
-    dataCadastro:     new Date().toLocaleDateString('pt-BR'),
-    origem:           'Portal TUCIC',
-  };
-
-  // Salvar na lista de membros
-  var membros = getMembros();
-  var idx = sessao.email ? membros.findIndex(function(m){ return m.email === sessao.email; }) : -1;
-  if(idx > -1) {
-    dados.status = membros[idx].status; // preservar status aprovado
-    dados.perfil = membros[idx].perfil;
-    dados.obs    = membros[idx].obs;
-    membros[idx] = dados;
-  } else {
-    dados.status = 'pendente';
-    membros.push(dados);
-  }
-  setMembros(membros);
-
-  // Atualizar foto no avatar se logado
-  if(foto && sessao.email) {
-    localStorage.setItem('tucic_foto_' + sessao.email, foto);
-    atualizarAvatars(foto, sessao.ini);
-  }
-
-  // Mostrar sucesso
-  document.getElementById('cadastro-sucesso').style.display = 'block';
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-// Carregar dados quando a seção for aberta
-var _secMeuCadastro = sec;
-function sec(id, el) {
-  _secMeuCadastro(id, el);
-  if(id === 'meu-cadastro') {
-    setTimeout(carregarCadastroExistente, 80);
-  }
-}
-
 
 // ==============================
-// MEU CADASTRO (formulário membro)
+// MODO EDIÇÃO INLINE (ADMIN)
 // ==============================
-function toggleNomeAtual() {
-  var v = document.getElementById('c-alterou-nome').value;
-  document.getElementById('c-nome-atual-wrap').style.display = v==='sim' ? 'block' : 'none';
+function ativarModoEdicao() {
+  modoEdicao=true;
+  document.querySelector('.main').classList.add('editing-mode');
+  document.getElementById('fab-edit').style.display='none';
+  document.getElementById('fab-save').style.display='flex';
+  document.getElementById('fab-cancel').style.display='flex';
+  document.getElementById('edit-notice').classList.add('show');
+  document.getElementById('edit-toolbar-inline').classList.add('show');
+  document.querySelectorAll('.main .ph,.main .ps,.main .rt,.main .rm,.main .rb,.main .gt,.main .gd,.main .lt,.main .avt,.main .avb,.main .st,.main .ebo,.main .en').forEach(function(el){el.setAttribute('contenteditable','true');el.style.outline='none';});
 }
-function toggleSaudeObs() {
-  var v = document.getElementById('c-saude-problema').value;
-  document.getElementById('c-saude-obs-wrap').style.display = v==='sim' ? 'block' : 'none';
+function salvarEdicao() {
+  modoEdicao=false;
+  document.querySelector('.main').classList.remove('editing-mode');
+  document.getElementById('fab-edit').style.display='flex';
+  document.getElementById('fab-save').style.display='none';
+  document.getElementById('fab-cancel').style.display='none';
+  document.getElementById('edit-notice').classList.remove('show');
+  document.getElementById('edit-toolbar-inline').classList.remove('show');
+  document.querySelectorAll('.main [contenteditable]').forEach(function(el){el.removeAttribute('contenteditable');el.style.outline='';});
+  var fb=document.getElementById('save-feedback'); fb.style.display='flex';
+  setTimeout(function(){fb.style.display='none';},2500);
 }
-function toggleTrajetoria() {
-  var v = document.getElementById('c-outro-terreiro').value;
-  document.getElementById('c-trajetoria-wrap').style.display = v==='sim' ? 'block' : 'none';
+function cancelarEdicao() {
+  modoEdicao=false;
+  document.querySelector('.main').classList.remove('editing-mode');
+  document.getElementById('fab-edit').style.display='flex';
+  document.getElementById('fab-save').style.display='none';
+  document.getElementById('fab-cancel').style.display='none';
+  document.getElementById('edit-notice').classList.remove('show');
+  document.getElementById('edit-toolbar-inline').classList.remove('show');
+  document.querySelectorAll('.main [contenteditable]').forEach(function(el){el.removeAttribute('contenteditable');el.style.outline='';});
 }
-function toggleResponsavel() {
-  var v = document.getElementById('c-menor').value;
-  document.getElementById('c-responsavel-wrap').style.display = v==='sim' ? 'block' : 'none';
-}
+function fmtI(cmd){document.execCommand(cmd,false,null);}
+function fmtBI(tag){document.execCommand('formatBlock',false,'<'+tag+'>');}
 
-function previewSelfie(input) {
-  if (!input.files || !input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    document.getElementById('c-selfie-img').src = e.target.result;
-    document.getElementById('c-selfie-preview').style.display = 'block';
-    window._selfieData = e.target.result;
+// ==============================
+// PDF IMPORT
+// ==============================
+var uploadZone=document.getElementById('upload-zone');
+if(uploadZone){
+  uploadZone.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('drag');});
+  uploadZone.addEventListener('dragleave',function(){this.classList.remove('drag');});
+  uploadZone.addEventListener('drop',function(e){e.preventDefault();this.classList.remove('drag');var f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')lerPDF(f);});
+}
+function processarPDF(input){if(input.files[0])lerPDF(input.files[0]);}
+function lerPDF(file){
+  var result=document.getElementById('pdf-result');
+  result.innerHTML='<div class="pdf-processing"><div class="pdf-name">📄 '+file.name+'</div><div style="color:var(--muted);font-size:13px;">⏳ Extraindo texto...</div></div>';
+  if(typeof pdfjsLib==='undefined'){result.innerHTML='<div class="av red"><div class="avb">Erro: PDF.js não carregou.</div></div>';return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise.then(function(pdf){
+      var promises=[];
+      for(var i=1;i<=pdf.numPages;i++) promises.push(pdf.getPage(i).then(function(p){ return p.getTextContent().then(function(tc){ return tc.items.map(function(it){ return it.str; }).join(' '); }); }));
+      Promise.all(promises).then(function(texts){
+        var txt=texts.join('\n\n').trim();
+        var nome=file.name.replace('.pdf','').replace(/_/g,' ');
+        result.innerHTML='<div class="pdf-processing"><div class="pdf-name">✅ '+file.name+'</div><div class="pdf-preview" id="pdf-text">'+txt.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div class="pdf-actions"><button class="btn-add-ev" onclick="criarPaginaDoPDF(\''+nome+'\')">Criar Página com este Conteúdo</button><button class="btn-sec" onclick="copiarTexto()">Copiar Texto</button></div><div id="pdf-feedback" style="font-size:12px;color:var(--success);margin-top:8px;display:none;font-weight:700;"></div></div>';
+      });
+    }).catch(function(){ result.innerHTML='<div class="av red"><div class="avb">Não foi possível ler este PDF.</div></div>'; });
   };
-  reader.readAsDataURL(input.files[0]);
+  reader.readAsArrayBuffer(file);
 }
-
-function salvarMeuCadastro() {
-  // Validação dos campos obrigatórios
-  var erros = [];
-  var obrigatorios = [
-    ['c-nome-registro', 'Nome completo de registro'],
-    ['c-alterou-nome', 'Se alterou o nome civil'],
-    ['c-cpf', 'CPF'],
-    ['c-rg', 'RG'],
-    ['c-rg-org', 'Órgão Expedidor'],
-    ['c-nascimento', 'Data de Nascimento'],
-    ['c-estado-civil', 'Estado Civil'],
-    ['c-email', 'E-mail'],
-    ['c-instagram', 'Instagram'],
-    ['c-celular', 'Celular'],
-    ['c-saude-psico', 'Acompanhamento psicológico/psiquiátrico'],
-    ['c-saude-problema', 'Problema de saúde'],
-    ['c-profissao', 'Profissão'],
-    ['c-escolaridade', 'Escolaridade'],
-    ['c-mae-pai-santo', 'Mãe/Pai de Santo'],
-    ['c-nivel', 'Nível espiritual'],
-    ['c-outro-terreiro', 'Frequentou outro terreiro'],
-    ['c-menor', 'Se é menor de idade'],
-  ];
-
-  obrigatorios.forEach(function(par) {
-    var el = document.getElementById(par[0]);
-    if (!el || !el.value.trim()) erros.push(par[1]);
+function criarPaginaDoPDF(nome){
+  var txt=document.getElementById('pdf-text'); if(!txt) return;
+  var conteudo=txt.innerText||txt.textContent;
+  paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;color:#374151;">'+conteudo.replace(/</g,'&lt;')+'</pre>',data:new Date().toLocaleDateString('pt-BR')});
+  adicionarAoMenu(nome,'📄',paginas.length-1);
+  renderPaginas();
+  var fb=document.getElementById('pdf-feedback');
+  if(fb){fb.textContent='✓ Página "'+nome+'" criada!';fb.style.display='block';}
+}
+function copiarTexto(){
+  var txt=document.getElementById('pdf-text'); if(!txt) return;
+  navigator.clipboard.writeText(txt.innerText||txt.textContent).then(function(){
+    var fb=document.getElementById('pdf-feedback');
+    if(fb){fb.textContent='✓ Copiado!';fb.style.display='block';setTimeout(function(){fb.style.display='none';},2000);}
   });
-
-  if (!document.getElementById('c-declaro').checked) erros.push('Declaração de veracidade');
-  if (!document.getElementById('c-regimento').checked) erros.push('Confirmação do Regimento');
-
-  var errosEl = document.getElementById('c-erros');
-  if (erros.length > 0) {
-    errosEl.style.display = 'block';
-    errosEl.innerHTML = '<div class="avt">⚠️ Preencha os campos obrigatórios:</div><ul style="margin-top:6px;padding-left:20px;">' +
-      erros.map(function(e){ return '<li>'+e+'</li>'; }).join('') + '</ul>';
-    errosEl.scrollIntoView({ behavior:'smooth', block:'center' });
-    return;
-  }
-  errosEl.style.display = 'none';
-
-  // Montar objeto do membro
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-  var m = {
-    nomeRegistro:     document.getElementById('c-nome-registro').value.trim(),
-    alterouNome:      document.getElementById('c-alterou-nome').value,
-    nomeAtual:        (document.getElementById('c-nome-atual')||{value:''}).value.trim(),
-    nomeTerreiro:     document.getElementById('c-nome-terreiro').value.trim(),
-    email:            document.getElementById('c-email').value.trim().toLowerCase(),
-    cpf:              document.getElementById('c-cpf').value.trim(),
-    rg:               document.getElementById('c-rg').value.trim(),
-    rgOrg:            document.getElementById('c-rg-org').value.trim(),
-    nascimento:       document.getElementById('c-nascimento').value,
-    estadoCivil:      document.getElementById('c-estado-civil').value,
-    celular:          document.getElementById('c-celular').value.trim(),
-    instagram:        document.getElementById('c-instagram').value.trim(),
-    profissao:        document.getElementById('c-profissao').value.trim(),
-    escolaridade:     document.getElementById('c-escolaridade').value,
-    endereco:         document.getElementById('c-endereco').value.trim(),
-    cidade:           document.getElementById('c-cidade').value.trim(),
-    uf:               document.getElementById('c-uf').value.trim(),
-    cep:              document.getElementById('c-cep').value.trim(),
-    saudePsico:       document.getElementById('c-saude-psico').value,
-    saudeProblema:    document.getElementById('c-saude-problema').value,
-    saudeObs:         document.getElementById('c-saude-obs') ? document.getElementById('c-saude-obs').value.trim() : '',
-    maePaiSanto:      document.getElementById('c-mae-pai-santo').value.trim(),
-    guiaFrente:       document.getElementById('c-guia-frente').value.trim(),
-    orixas:           document.getElementById('c-orixas').value.trim(),
-    padrinhosCarnais: document.getElementById('c-padrinhos-carnais').value.trim(),
-    padrinhosEsp:     document.getElementById('c-padrinhos-esp').value.trim(),
-    nivel:            document.getElementById('c-nivel').value,
-    outroTerreiro:    document.getElementById('c-outro-terreiro').value,
-    trajetoria:       document.getElementById('c-trajetoria') ? document.getElementById('c-trajetoria').value.trim() : '',
-    intAtendimento:   document.getElementById('c-int-atendimento').checked,
-    intSuporte:       document.getElementById('c-int-suporte').checked,
-    intAuxilio:       document.getElementById('c-int-auxilio').checked,
-    menor:            document.getElementById('c-menor').value,
-    responsavelNome:  document.getElementById('c-responsavel-nome') ? document.getElementById('c-responsavel-nome').value.trim() : '',
-    foto:             window._selfieData || null,
-    status:           'pendente',
-    perfil:           'membro',
-    dataCadastro:     new Date().toLocaleDateString('pt-BR'),
-    origem:           'Portal TUCIC',
-  };
-
-  // Salvar na lista de membros (merge por e-mail)
-  var membros = getMembros();
-  var idx = membros.findIndex(function(mb){ return mb.email === m.email; });
-  if (idx > -1) {
-    m.status = membros[idx].status; // preservar status se já existe
-    m.perfil = membros[idx].perfil;
-    membros[idx] = m;
-  } else {
-    membros.push(m);
-  }
-  setMembros(membros);
-
-  // Mostrar sucesso e esconder formulário
-  document.getElementById('cadastro-sucesso').style.display = 'block';
-  document.getElementById('cadastro-form').style.display = 'none';
-  document.getElementById('cadastro-sucesso').scrollIntoView({ behavior:'smooth' });
-}
-
-// Pré-preencher cadastro se o membro já tem dados
-function preCarregarCadastro() {
-  var sessao = JSON.parse(localStorage.getItem('tucic_sessao') || '{}');
-  if (!sessao.email) return;
-  var membros = getMembros();
-  var m = membros.find(function(mb){ return mb.email === sessao.email; });
-  if (!m) return;
-  var map = {
-    'c-nome-registro': m.nomeRegistro, 'c-nome-atual': m.nomeAtual,
-    'c-nome-terreiro': m.nomeTerreiro, 'c-email': m.email,
-    'c-cpf': m.cpf, 'c-rg': m.rg, 'c-rg-org': m.rgOrg,
-    'c-nascimento': m.nascimento, 'c-estado-civil': m.estadoCivil,
-    'c-celular': m.celular, 'c-instagram': m.instagram,
-    'c-profissao': m.profissao, 'c-escolaridade': m.escolaridade,
-    'c-endereco': m.endereco, 'c-cidade': m.cidade,
-    'c-uf': m.uf, 'c-cep': m.cep,
-    'c-saude-psico': m.saudePsico, 'c-saude-problema': m.saudeProblema,
-    'c-saude-obs': m.saudeObs, 'c-mae-pai-santo': m.maePaiSanto,
-    'c-guia-frente': m.guiaFrente, 'c-orixas': m.orixas,
-    'c-padrinhos-carnais': m.padrinhosCarnais, 'c-padrinhos-esp': m.padrinhosEsp,
-    'c-nivel': m.nivel, 'c-outro-terreiro': m.outroTerreiro,
-    'c-trajetoria': m.trajetoria, 'c-menor': m.menor,
-    'c-responsavel-nome': m.responsavelNome, 'c-alterou-nome': m.alterouNome,
-  };
-  Object.keys(map).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el && map[id]) el.value = map[id];
-  });
-  if (m.intAtendimento) document.getElementById('c-int-atendimento').checked = true;
-  if (m.intSuporte)     document.getElementById('c-int-suporte').checked = true;
-  if (m.intAuxilio)     document.getElementById('c-int-auxilio').checked = true;
-  if (m.foto) {
-    window._selfieData = m.foto;
-    document.getElementById('c-selfie-img').src = m.foto;
-    document.getElementById('c-selfie-preview').style.display = 'block';
-  }
-  // Ativar campos condicionais
-  toggleNomeAtual(); toggleSaudeObs(); toggleTrajetoria(); toggleResponsavel();
-}
-
-// Adicionar meu-cadastro ao menu do membro e chamar preCarregar ao abrir
-var _secOrigCad = sec;
-function sec(id, el) {
-  _secOrigCad(id, el);
-  if (id === 'meu-cadastro') {
-    setTimeout(preCarregarCadastro, 50);
-  }
 }
 
 </script>
