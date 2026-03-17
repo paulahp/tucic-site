@@ -692,7 +692,77 @@ select.finput{cursor:pointer;}
       <div class="ph">Seja bem-vindo(a) ao TUCIC!</div><div class="ps">Cada módulo é um passo na sua jornada espiritual.</div>
       <div class="rc"><div class="rt">É com alegria que te recebemos</div><div class="rb">Aqui você encontrará todas as orientações para compreender, viver e crescer dentro da casa — com fé, respeito e consciência.</div></div>
       <div class="av blue"><div class="avtag" style="background:var(--azul-bg);color:var(--azul);border:1px solid var(--borda-azul);">Quiz de Boas-Vindas</div><div class="avt">Teste seu aprendizado!</div><div class="avb">10 perguntas rápidas. <a href="https://tally.so/r/w5yPjo" target="_blank" style="color:var(--azul);font-weight:700;">Acessar quiz</a></div></div>
-      <div class="av green"><div class="avtag" style="background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7;">Cadastro de Médium</div><div class="avt">Formulário para novos integrantes</div><div class="avb"><a href="https://tally.so/r/wabad2" target="_blank" style="color:var(--success);font-weight:700;">Acessar cadastro</a></div></div>
+      <!-- PRIMEIRO ACESSO -->
+      <div style="background:linear-gradient(135deg,#EEF2FF 0%,#E0E7FF 100%);border:1.5px solid var(--borda-azul);border-radius:14px;padding:20px 22px;margin-top:4px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+          <span style="font-size:20px;">✨</span>
+          <div style="font-size:15px;font-weight:800;color:var(--azul);">Primeiro acesso?</div>
+        </div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">Preencha seus dados abaixo para se cadastrar no terreiro. Leva menos de 5 minutos!</div>
+
+        <!-- MINI FORMULÁRIO INICIAL -->
+        <div id="home-cad-form">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Nome de registro *</label>
+                <input class="finput" id="hc-nome" placeholder="Seu nome completo">
+              </div>
+              <div class="form-group">
+                <label>Nome no terreiro</label>
+                <input class="finput" id="hc-nome-terreiro" placeholder="Como quer ser chamado(a)">
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>E-mail *</label>
+                <input class="finput" type="email" id="hc-email" placeholder="seu@email.com">
+              </div>
+              <div class="form-group">
+                <label>Celular *</label>
+                <input class="finput" id="hc-celular" placeholder="(48) 99999-9999">
+              </div>
+            </div>
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Data de nascimento</label>
+                <input class="finput" type="date" id="hc-nascimento">
+              </div>
+              <div class="form-group">
+                <label>Instagram</label>
+                <input class="finput" id="hc-instagram" placeholder="@usuario">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Nível espiritual</label>
+              <select class="finput" id="hc-nivel">
+                <option value="">Selecione</option>
+                <option>Médium iniciante</option>
+                <option>Médium em desenvolvimento</option>
+                <option>Médium desenvolvido (sem ponto)</option>
+                <option>Médium desenvolvido (com ponto)</option>
+                <option>Médium com cruzamento</option>
+                <option>Pai/Mãe pequeno(a)</option>
+                <option>Pai/Mãe de Santo coroado</option>
+              </select>
+            </div>
+          </div>
+          <div id="hc-erro" style="display:none;color:#991B1B;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:10px;"></div>
+          <button onclick="iniciarCadastroHome()" class="btn-primary" style="width:100%;margin-top:14px;padding:13px;font-size:14px;border-radius:10px;">
+            Continuar e preencher ficha completa →
+          </button>
+          <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Seus dados ficam salvos — você pode completar depois pelo menu "📝 Meu Cadastro"</div>
+        </div>
+
+        <div id="home-cad-ok" style="display:none;padding:16px;text-align:center;">
+          <div style="font-size:28px;margin-bottom:8px;">🌿</div>
+          <div style="font-weight:800;color:#065F46;font-size:15px;margin-bottom:4px;">Dados salvos! Axé!</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">Agora complete sua ficha pelo menu lateral.</div>
+          <button onclick="sec('meu-cadastro', document.querySelector('.ni[onclick*=meu-cadastro]'))" class="btn-primary" style="padding:10px 22px;font-size:13px;border-radius:8px;">
+            Ir para Meu Cadastro →
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- PRECEITOS -->
@@ -1214,12 +1284,12 @@ select.finput{cursor:pointer;}
           <div id="c-selfie-preview" style="display:none;margin-bottom:10px;">
             <img id="c-selfie-img" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:2px solid var(--borda-azul);">
           </div>
-          <label class="upload-zone" style="padding:24px;" onclick="document.getElementById('c-selfie-input').click()">
+          <div class="upload-zone" style="padding:24px;" onclick="document.getElementById('c-selfie-input').click()">
             <input type="file" id="c-selfie-input" class="upload-input" accept="image/*" onchange="previewSelfie(this)">
             <div class="upload-icon" style="font-size:28px;">📷</div>
             <div class="upload-title" style="font-size:13px;">Clique para selecionar sua foto</div>
             <div class="upload-sub">JPG ou PNG — máximo 5MB</div>
-          </label>
+          </div>
         </div>
 
         <!-- DECLARAÇÃO -->
@@ -1993,8 +2063,44 @@ function preCarregarCadastro() {
 }
 
 // ==============================
-// FOTO DE PERFIL
+// PRIMEIRO ACESSO (HOME)
 // ==============================
+function iniciarCadastroHome() {
+  var nome    = document.getElementById('hc-nome').value.trim();
+  var email   = document.getElementById('hc-email').value.trim().toLowerCase();
+  var celular = document.getElementById('hc-celular').value.trim();
+  var erroEl  = document.getElementById('hc-erro');
+  if (!nome || !email || !celular) {
+    erroEl.textContent = '⚠️ Preencha ao menos Nome, E-mail e Celular.';
+    erroEl.style.display = 'block'; return;
+  }
+  erroEl.style.display = 'none';
+  // Salvar ficha parcial na lista de membros
+  var m = {
+    nomeRegistro:  nome,
+    nomeTerreiro:  document.getElementById('hc-nome-terreiro').value.trim(),
+    email:         email,
+    celular:       celular,
+    nascimento:    document.getElementById('hc-nascimento').value,
+    instagram:     document.getElementById('hc-instagram').value.trim(),
+    nivel:         document.getElementById('hc-nivel').value,
+    maePaiSanto:   'Mãe Rosi de Oxum',
+    status:        'pendente',
+    perfil:        'membro',
+    dataCadastro:  new Date().toLocaleDateString('pt-BR'),
+    origem:        'Portal TUCIC — Primeiro Acesso',
+  };
+  var membros = getMembros();
+  var idx = membros.findIndex(function(mb){ return mb.email === m.email; });
+  if (idx > -1) { membros[idx] = Object.assign({}, membros[idx], m); }
+  else { membros.push(m); }
+  setMembros(membros);
+  // Mostrar sucesso
+  document.getElementById('home-cad-form').style.display = 'none';
+  document.getElementById('home-cad-ok').style.display   = 'block';
+}
+
+
 function atualizarAvatars(foto, ini) {
   var sbAv=document.getElementById('sb-av'); var sbIni=document.getElementById('sb-av-ini');
   if(sbAv){if(foto){sbAv.style.backgroundImage='url('+foto+')';sbAv.style.backgroundSize='cover';sbAv.style.backgroundPosition='center';sbAv.style.background='';if(sbIni)sbIni.style.display='none';}else{sbAv.style.backgroundImage='';sbAv.style.background='var(--azul)';if(sbIni){sbIni.style.display='';sbIni.textContent=ini||'';}}}
