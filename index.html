@@ -1040,6 +1040,7 @@ var eventosCustom=[];
 var paginas=[];
 var paginaEditando=null;
 var modoEdicao=false;
+var isAdmin=false;
 var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 var DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
@@ -1068,6 +1069,39 @@ function tab(g,id,el){
 }
 
 // ===== AUTH =====
+function aplicarSessao(u) {
+  document.getElementById('sb-av').textContent = u.ini;
+  document.getElementById('sb-name').textContent = u.name;
+  document.getElementById('sb-role').textContent = u.role;
+  document.getElementById('header-user').textContent = u.name;
+  document.getElementById('btn-sair').style.display = 'block';
+  if (u.admin) {
+    isAdmin = true;
+    document.getElementById('adm-nav').style.display = 'block';
+    document.getElementById('edit-fab').classList.add('show');
+  }
+  showView('v-dash');
+  buildAll();
+}
+
+// ===== RESTAURAR SESSÃO AO CARREGAR (F5) =====
+(function() {
+  try {
+    var s = localStorage.getItem('tucic_sessao');
+    if (!s) return;
+    var saved = JSON.parse(s);
+    if (!saved || !saved.email) { localStorage.removeItem('tucic_sessao'); return; }
+    var uReal = USERS[saved.email];
+    if (!uReal) { localStorage.removeItem('tucic_sessao'); return; }
+    // Aguardar DOM estar pronto
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { aplicarSessao(uReal); });
+    } else {
+      aplicarSessao(uReal);
+    }
+  } catch(e) { localStorage.removeItem('tucic_sessao'); }
+})();
+
 function doLogin(){
   var email=document.getElementById('lemail').value.trim().toLowerCase();
   var senha=document.getElementById('lsenha').value;
@@ -1075,17 +1109,9 @@ function doLogin(){
   var u=USERS[email];
   if(u&&u.pass===senha){
     err.style.display='none';
-    document.getElementById('sb-av').textContent=u.ini;
-    document.getElementById('sb-name').textContent=u.name;
-    document.getElementById('sb-role').textContent=u.role;
-    document.getElementById('header-user').textContent=u.name;
-    document.getElementById('btn-sair').style.display='block';
-    if(u.admin){
-      document.getElementById('adm-nav').style.display='block';
-      document.getElementById('edit-fab').classList.add('show');
-    }
-    showView('v-dash');
-    buildAll();
+    // Salvar sessão no localStorage (persiste ao F5)
+    localStorage.setItem('tucic_sessao', JSON.stringify({email:email, name:u.name, role:u.role, ini:u.ini, admin:u.admin}));
+    aplicarSessao(u);
   }else{
     err.textContent='E-mail ou senha incorretos.';
     err.style.display='block';
@@ -1093,6 +1119,8 @@ function doLogin(){
 }
 function logout(){
   modoEdicao=false;
+  localStorage.removeItem('tucic_sessao');
+  isAdmin=false;
   document.getElementById('btn-sair').style.display='none';
   document.getElementById('header-user').textContent='';
   document.getElementById('adm-nav').style.display='none';
