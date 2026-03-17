@@ -850,7 +850,8 @@ select.finput{cursor:pointer;}
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js">
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
 // ==============================
 // GOOGLE CALENDAR
 // ==============================
@@ -1382,4 +1383,61 @@ function lerPDF(file){
 function criarPaginaDoPDF(nome){
   var txt=document.getElementById('pdf-text');if(!txt)return;
   var conteudo=txt.innerText||txt.textContent;
-  paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;color:#374151;">'+conteudo.replace(/&/g,'&amp;').replace(/</g,'&lt;').
+  paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;color:#374151;">'+conteudo.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>',data:new Date().toLocaleDateString('pt-BR')});
+  adicionarAoMenu(nome,'📄',paginas.length-1);
+  renderPaginas();
+  var fb=document.getElementById('pdf-feedback');
+  if(fb){fb.textContent='✓ Página "'+nome+'" criada! Acesse em "Criar Páginas" para editar.';fb.style.display='block';}
+}
+
+function copiarTexto(){
+  var txt=document.getElementById('pdf-text');if(!txt)return;
+  navigator.clipboard.writeText(txt.innerText||txt.textContent).then(function(){
+    var fb=document.getElementById('pdf-feedback');
+    if(fb){fb.textContent='✓ Texto copiado!';fb.style.display='block';setTimeout(function(){fb.style.display='none';},2000);}
+  });
+}
+</script>
+
+<!-- MODAL EVENTO DETALHE -->
+<div class="modal-overlay" id="modal-ev">
+  <div class="modal">
+    <div class="modal-header">
+      <div><h3 id="modal-ev-titulo"></h3><div class="modal-date" id="modal-ev-data"></div></div>
+      <button class="modal-close" onclick="fecharModal('modal-ev')">✕</button>
+    </div>
+    <div id="modal-ev-corpo"></div>
+  </div>
+</div>
+
+<!-- FAB EDIÇÃO ADMIN -->
+<div class="edit-fab" id="edit-fab">
+  <div id="save-feedback" style="display:none;background:#059669;color:#fff;border-radius:30px;padding:10px 18px;font-size:13px;font-weight:700;align-items:center;gap:6px;">✓ Alterações salvas!</div>
+  <button class="fab-btn fab-cancel" id="fab-cancel" style="display:none;" onclick="cancelarEdicao()">✕ Cancelar</button>
+  <button class="fab-btn fab-save" id="fab-save" style="display:none;" onclick="salvarEdicao()">💾 Salvar alterações</button>
+  <button class="fab-btn fab-edit" id="fab-edit" onclick="ativarModoEdicao()">✏️ Editar página</button>
+</div>
+
+<!-- MODAL RENOMEAR PÁGINA -->
+<div class="rename-modal" id="rename-modal">
+  <div class="rename-box">
+    <h4>✏️ Renomear Página</h4>
+    <input type="hidden" id="rename-idx">
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <select id="rename-icone" class="finput" style="width:60px;margin:0;padding:8px;">
+        <option>📄</option><option>📿</option><option>🌿</option><option>✨</option>
+        <option>🌀</option><option>📖</option><option>🎶</option><option>🏛️</option>
+        <option>💡</option><option>🌟</option><option>📜</option><option>🍃</option>
+        <option>🕊️</option><option>💰</option><option>🫖</option>
+      </select>
+      <input type="text" id="rename-titulo" class="finput" style="margin:0;flex:1;" placeholder="Nome da página">
+    </div>
+    <div class="rename-actions">
+      <button class="btn-sm btn-del" onclick="document.getElementById('rename-modal').classList.remove('open')">Cancelar</button>
+      <button class="btn-add-ev" onclick="salvarRename()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
