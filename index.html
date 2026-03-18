@@ -1456,6 +1456,7 @@ select.finput{cursor:pointer;}
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 // ==============================
@@ -1572,7 +1573,10 @@ function logout() {
 }
 
 // Restaurar sessão ao carregar (F5)
-window.addEventListener('load', function() {
+window.addEventListener('load', async function() {
+  // Carregar membros da nuvem primeiro
+  await carregarMembrosNuvem();
+
   // Recarregar membros aprovados no USERS (para login e reset de senha funcionarem)
   try {
     var membros = JSON.parse(localStorage.getItem('tucic_membros') || '[]');
@@ -1614,7 +1618,9 @@ function sec(id, el) {
   var m = document.querySelector('.main');
   if (m) m.scrollTop = 0;
   // Callbacks por seção
-  if (id === 'admin-membros') setTimeout(renderMembros, 50);
+  if (id === 'admin-membros') {
+    carregarMembrosNuvem().then(function() { setTimeout(renderMembros, 50); });
+  }
   if (id === 'meu-cadastro')  setTimeout(preCarregarCadastro, 50);
 }
 
@@ -1966,8 +1972,131 @@ function inserirImg() { var url=prompt('URL da imagem:'); if (url) { document.ge
 // ==============================
 // ADMIN: MEMBROS
 // ==============================
-function getMembros() { try { return JSON.parse(localStorage.getItem('tucic_membros')||'[]'); } catch(e) { return []; } }
-function setMembros(lista) { localStorage.setItem('tucic_membros', JSON.stringify(lista)); }
+// ==============================
+// SUPABASE — banco de dados na nuvem
+// ==============================
+var _SB_URL  = 'https://somfeglakzogwevqecbf.supabase.co';
+var _SB_KEY  = 'sb_publishable_TKXgSQeLhKmGvjL8p4h_0A_dFDdYZP_';
+var _sbClient = null;
+function getSB() {
+  if (!_sbClient && window.supabase) {
+    _sbClient = window.supabase.createClient(_SB_URL, _SB_KEY);
+  }
+  return _sbClient;
+}
+
+// Cache local para operações síncronas
+var _membrosCache = null;
+
+// Carregar membros do Supabase (assíncrono)
+async function carregarMembrosNuvem() {
+  var sb = getSB();
+  if (!sb) return;
+  try {
+    var { data, error } = await sb.from('membros').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    var lista = (data || []).map(function(row) {
+      var m = row.dados || {};
+      m._sbId = row.id;
+      return m;
+    });
+    _membrosCache = lista;
+    localStorage.setItem('tucic_membros', JSON.stringify(lista));
+    return lista;
+  } catch(e) {
+    console.warn('Supabase offline, usando cache local:', e.message);
+    return getMembrosLocal();
+  }
+}
+
+// Salvar membro no Supabase
+async function salvarMembroNuvem(m) {
+  var sb = getSB();
+  if (!sb) { salvarMembroLocal(m); return; }
+  try {
+    var sbId = m._sbId;
+    var payload = Object.assign({}, m);
+    delete payload._sbId;
+    if (sbId) {
+      await sb.from('membros').update({ dados: payload }).eq('id', sbId);
+    } else {
+      var { data } = await sb.from('membros').insert({ dados: payload }).select();
+      if (data && data[0]) m._sbId = data[0].id;
+    }
+  } catch(e) {
+    console.warn('Erro ao salvar na nuvem:', e.message);
+  }
+}
+
+// Deletar membro no Supabase
+async function deletarMembroNuvem(sbId) {
+  var sb = getSB();
+  if (!sb || !sbId) return;
+  try {
+    await sb.from('membros').delete().eq('id', sbId);
+  } catch(e) {
+    console.warn('Erro ao deletar na nuvem:', e.message);
+  }
+}
+
+// Funções síncronas (usam cache) — mantém compatibilidade com o código existente
+function getMembrosLocal() {
+  try { return JSON.parse(localStorage.getItem('tucic_membros') || '[]'); } catch(e) { return []; }
+}
+function salvarMembroLocal(m) {
+  // fallback silencioso
+}
+function getMembros() {
+  if (_membrosCache !== null) return _membrosCache;
+  var local = getMembrosLocal();
+  _membrosCache = local;
+  return local;
+}
+function setMembros(lista) {
+  _membrosCache = lista;
+  localStorage.setItem('tucic_membros', JSON.stringify(lista));
+  // Sincronizar com a nuvem de forma assíncrona
+  sincronizarNuvem(lista);
+}
+
+// Sincronizar lista completa com Supabase
+async function sincronizarNuvem(lista) {
+  var sb = getSB();
+  if (!sb) return;
+  try {
+    // Buscar IDs existentes
+    var { data: existentes } = await sb.from('membros').select('id, dados');
+    var existMap = {};
+    (existentes || []).forEach(function(row) {
+      var email = row.dados && row.dados.email;
+      if (email) existMap[email] = row.id;
+    });
+    for (var i = 0; i < lista.length; i++) {
+      var m = lista[i];
+      var payload = Object.assign({}, m);
+      var sbId = payload._sbId || existMap[m.email];
+      delete payload._sbId;
+      if (sbId) {
+        await sb.from('membros').update({ dados: payload }).eq('id', sbId);
+        lista[i]._sbId = sbId;
+      } else {
+        var { data } = await sb.from('membros').insert({ dados: payload }).select();
+        if (data && data[0]) lista[i]._sbId = data[0].id;
+      }
+    }
+    // Remover da nuvem quem foi deletado localmente
+    var emailsLocais = lista.map(function(m){ return m.email; });
+    (existentes || []).forEach(async function(row) {
+      var email = row.dados && row.dados.email;
+      if (email && emailsLocais.indexOf(email) === -1) {
+        await sb.from('membros').delete().eq('id', row.id);
+      }
+    });
+  } catch(e) {
+    console.warn('Erro ao sincronizar nuvem:', e.message);
+  }
+}
+
 function memTab(tab,el) {
   document.querySelectorAll('.mem-tab').forEach(function(t){ t.classList.remove('active'); });
   if (el) el.classList.add('active');
@@ -1976,42 +2105,47 @@ function memTab(tab,el) {
   if (tab==='fichas') renderFichas();
 }
 function renderMembros() {
-  var membros=getMembros();
-  var busca=((document.getElementById('mem-busca')||{}).value||'').toLowerCase();
-  var filtro=((document.getElementById('mem-filtro')||{}).value)||'todos';
-  var filtrados=membros.filter(function(m) {
-    var matchB=!busca||(m.nomeTerreiro||m.nomeRegistro||'').toLowerCase().includes(busca)||(m.email||'').toLowerCase().includes(busca);
-    var matchF=filtro==='todos'||m.status===filtro;
-    return matchB&&matchF;
-  });
   var container=document.getElementById('mem-lista-container');
   var empty=document.getElementById('mem-empty');
   if (!container) return;
-  if (filtrados.length===0) { container.innerHTML=''; if(empty) empty.style.display='block'; return; }
-  if (empty) empty.style.display='none';
-  container.innerHTML=filtrados.map(function(m) {
-    var realIdx=membros.indexOf(m);
-    var nome=m.nomeTerreiro||m.nomeRegistro||m.email||'Sem nome';
-    var ini=nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-    var stBadge=m.status==='ativo'?'<span class="mem-badge badge-ativo">✅ Ativo</span>':m.status==='inativo'?'<span class="mem-badge badge-inativo">❌ Inativo</span>':'<span class="mem-badge badge-pendente">⏳ Pendente</span>';
-    var pfBadge=m.perfil==='admin'?'<span class="mem-badge badge-admin">⚙️ Admin</span>':'<span class="mem-badge badge-membro">👤 Membro</span>';
-    return '<div class="mem-card">'
-      +'<div class="mem-card-header"><div class="mem-avatar">'+(m.foto?'<img src="'+m.foto+'">':ini)+'</div>'
-      +'<div style="flex:1;"><div class="mem-name">'+nome+'</div><div class="mem-email">'+(m.email||'')+'</div>'
-      +'<div class="mem-badges">'+stBadge+pfBadge+(m.nivel?'<span class="mem-badge badge-membro">'+m.nivel+'</span>':'')+'</div></div></div>'
-      +'<div class="mem-detail-grid">'
-      +(m.celular?'<div class="mem-detail-item"><span class="mem-detail-label">Celular</span><span class="mem-detail-value">'+m.celular+'</span></div>':'')
-      +(m.orixas?'<div class="mem-detail-item"><span class="mem-detail-label">Orixás</span><span class="mem-detail-value">'+m.orixas+'</span></div>':'')
-      +(m.guiaFrente?'<div class="mem-detail-item"><span class="mem-detail-label">Guia de Frente</span><span class="mem-detail-value">'+m.guiaFrente+'</span></div>':'')
-      +'</div>'
-      +'<div class="mem-card-actions">'
-      +(m.status==='pendente'?'<button class="btn-sm btn-edit" onclick="aprovarMembro('+realIdx+')">✅ Aprovar</button>':'')
-      +'<button class="btn-sm btn-edit" onclick="editarMembro('+realIdx+')">✏️ Editar</button>'
-      +(m.status==='ativo'?'<button class="btn-sm btn-del" onclick="toggleStatusMembro('+realIdx+',\'inativo\')">❌ Desativar</button>':m.status==='inativo'?'<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+realIdx+',\'ativo\')">✅ Reativar</button>':'')
-      +'<button class="btn-sm btn-del" onclick="excluirMembro('+realIdx+')">🗑 Excluir</button>'
-      +'</div></div>';
-  }).join('');
+  container.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">⏳ Carregando da nuvem...</div>';
+  // Garantir dados atualizados da nuvem antes de renderizar
+  carregarMembrosNuvem().then(function() {
+    var membros=getMembros();
+    var busca=((document.getElementById('mem-busca')||{}).value||'').toLowerCase();
+    var filtro=((document.getElementById('mem-filtro')||{}).value)||'todos';
+    var filtrados=membros.filter(function(m){
+      var matchB=!busca||(m.nomeTerreiro||m.nomeRegistro||'').toLowerCase().includes(busca)||(m.email||'').toLowerCase().includes(busca);
+      var matchF=filtro==='todos'||m.status===filtro;
+      return matchB&&matchF;
+    });
+    if(filtrados.length===0){container.innerHTML='';if(empty)empty.style.display='block';return;}
+    if(empty)empty.style.display='none';
+    container.innerHTML=filtrados.map(function(m){
+      var realIdx=membros.indexOf(m);
+      var nome=m.nomeTerreiro||m.nomeRegistro||m.email||'Sem nome';
+      var ini=nome.split(' ').slice(0,2).map(function(p){return p[0]||'';}).join('').toUpperCase();
+      var stBadge=m.status==='ativo'?'<span class="mem-badge badge-ativo">✅ Ativo</span>':m.status==='inativo'?'<span class="mem-badge badge-inativo">❌ Inativo</span>':'<span class="mem-badge badge-pendente">⏳ Pendente</span>';
+      var pfBadge=m.perfil==='admin'?'<span class="mem-badge badge-admin">⚙️ Admin</span>':'<span class="mem-badge badge-membro">👤 Membro</span>';
+      return '<div class="mem-card">'
+        +'<div class="mem-card-header"><div class="mem-avatar">'+(m.foto?'<img src="'+m.foto+'">':ini)+'</div>'
+        +'<div style="flex:1;"><div class="mem-name">'+nome+'</div><div class="mem-email">'+(m.email||'')+'</div>'
+        +'<div class="mem-badges">'+stBadge+pfBadge+(m.nivel?'<span class="mem-badge badge-membro">'+m.nivel+'</span>':'')+'</div></div></div>'
+        +'<div class="mem-detail-grid">'
+        +(m.celular?'<div class="mem-detail-item"><span class="mem-detail-label">Celular</span><span class="mem-detail-value">'+m.celular+'</span></div>':'')
+        +(m.orixas?'<div class="mem-detail-item"><span class="mem-detail-label">Orixás</span><span class="mem-detail-value">'+m.orixas+'</span></div>':'')
+        +(m.guiaFrente?'<div class="mem-detail-item"><span class="mem-detail-label">Guia de Frente</span><span class="mem-detail-value">'+m.guiaFrente+'</span></div>':'')
+        +'</div>'
+        +'<div class="mem-card-actions">'
+        +(m.status==='pendente'?'<button class="btn-sm btn-edit" onclick="aprovarMembro('+realIdx+')">✅ Aprovar</button>':'')
+        +'<button class="btn-sm btn-edit" onclick="editarMembro('+realIdx+')">✏️ Editar</button>'
+        +(m.status==='ativo'?'<button class="btn-sm btn-del" onclick="toggleStatusMembro('+realIdx+','inativo')">❌ Desativar</button>':m.status==='inativo'?'<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+realIdx+','ativo')">✅ Reativar</button>':'')
+        +'<button class="btn-sm btn-del" onclick="excluirMembro('+realIdx+')">🗑 Excluir</button>'
+        +'</div></div>';
+    }).join('');
+  });
 }
+
 function renderFichas() {
   var membros=getMembros(); var container=document.getElementById('mem-fichas-container'); if (!container) return;
   if (membros.length===0) { container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted2);">Nenhum membro cadastrado.</div>'; return; }
@@ -2060,6 +2194,18 @@ function salvarMembro() {
   if (!email&&!nomeReg) { alert('Preencha ao menos o nome ou e-mail.'); return; }
   var m={nomeRegistro:nomeReg,nomeAtual:document.getElementById('m-nome-atual').value.trim(),nomeTerreiro:document.getElementById('m-nome-terreiro').value.trim(),email:email,cpf:document.getElementById('m-cpf').value.trim(),rg:document.getElementById('m-rg').value.trim(),rgOrg:document.getElementById('m-rg-org').value.trim(),nascimento:document.getElementById('m-nascimento').value,estadoCivil:document.getElementById('m-estado-civil').value,celular:document.getElementById('m-celular').value.trim(),instagram:document.getElementById('m-instagram').value.trim(),profissao:document.getElementById('m-profissao').value.trim(),escolaridade:document.getElementById('m-escolaridade').value,endereco:document.getElementById('m-endereco').value.trim(),cep:document.getElementById('m-cep').value.trim(),uf:document.getElementById('m-uf').value.trim(),saudePsico:document.getElementById('m-saude-psico').value,saudeProblema:document.getElementById('m-saude-problema').value,saudeObs:document.getElementById('m-saude-obs').value.trim(),maePaiSanto:document.getElementById('m-mae-pai-santo').value.trim(),guiaFrente:document.getElementById('m-guia-frente').value.trim(),orixas:document.getElementById('m-orixas').value.trim(),padrinhosCarnais:document.getElementById('m-padrinhos-carnais').value.trim(),padrinhosEsp:document.getElementById('m-padrinhos-esp').value.trim(),nivel:document.getElementById('m-nivel').value,outroTerreiro:document.getElementById('m-outro-terreiro').value,trajetoria:document.getElementById('m-trajetoria').value.trim(),intAtendimento:document.getElementById('m-int-atendimento').checked,intSuporte:document.getElementById('m-int-suporte').checked,intAuxilio:document.getElementById('m-int-auxilio').checked,status:document.getElementById('m-status').value,perfil:document.getElementById('m-perfil').value,senha:document.getElementById('m-senha').value.trim(),obs:document.getElementById('m-obs').value.trim(),dataCadastro:new Date().toLocaleDateString('pt-BR')};
   var membros=getMembros(); var idxEdit=document.getElementById('membro-id').value;
+  // Validar CPF duplicado (ignora o próprio registro sendo editado)
+  var cpfLimpo = (m.cpf||'').replace(/\D/g,'');
+  if (cpfLimpo) {
+    var cpfDup = membros.findIndex(function(mb, i){
+      if (idxEdit !== '' && i === parseInt(idxEdit)) return false; // ignora o próprio
+      return mb.cpf && mb.cpf.replace(/\D/g,'') === cpfLimpo;
+    });
+    if (cpfDup > -1) {
+      alert('⚠️ CPF já cadastrado para: ' + (membros[cpfDup].nomeTerreiro || membros[cpfDup].nomeRegistro || membros[cpfDup].email) + '. Verifique os dados.');
+      return;
+    }
+  }
   if (idxEdit!=='') { if(membros[idxEdit]&&membros[idxEdit].foto) m.foto=membros[idxEdit].foto; membros[parseInt(idxEdit)]=m; }
   else membros.push(m);
   if (m.email&&m.senha) { var nome=m.nomeTerreiro||m.nomeRegistro||m.email; var ini=nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase(); USERS[m.email]={pass:m.senha,name:nome,role:m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO',ini:ini,admin:m.perfil==='admin'}; }
@@ -2430,6 +2576,19 @@ function enviarSolicitacao() {
     dataCadastro: new Date().toLocaleDateString('pt-BR'), origem: 'Solicitação — Portal TUCIC'
   };
   var membros = getMembros();
+  // Validar CPF duplicado
+  var cpfLimpo = m.cpf.replace(/\D/g,'');
+  if (cpfLimpo) {
+    var cpfDup = membros.findIndex(function(mb, i){
+      return mb.cpf && mb.cpf.replace(/\D/g,'') === cpfLimpo;
+    });
+    if (cpfDup > -1) {
+      erroEl.textContent = '⚠️ Já existe um cadastro com este CPF (' + membros[cpfDup].nomeRegistro + '). Entre em contato com a administração.';
+      erroEl.style.display = 'block';
+      erroEl.scrollIntoView({behavior:'smooth',block:'center'});
+      return;
+    }
+  }
   var idx = membros.findIndex(function(mb){ return mb.email === m.email; });
   if (idx > -1) membros[idx] = m; else membros.push(m);
   setMembros(membros);
