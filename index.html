@@ -30,8 +30,9 @@ header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify
 .btn-sair:hover{background:var(--azul-bg);}
 .view{display:none!important;position:relative;}
 .view.active{display:block!important;}
-#v-login.active,#v-solicitar.active{display:flex!important;}
+#v-login.active,#v-solicitar.active,#v-resetsenha.active{display:flex!important;}
 #v-login{align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:40px 20px;background:linear-gradient(135deg,var(--azul-bg) 0%,var(--bg) 60%);}
+#v-resetsenha{align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:40px 20px;background:linear-gradient(135deg,var(--azul-bg) 0%,var(--bg) 60%);}
 #v-solicitar{align-items:center;justify-content:center;min-height:calc(100vh - 60px);padding:40px 20px;background:linear-gradient(135deg,var(--azul-bg) 0%,var(--bg) 60%);}
 .login-box{width:100%;max-width:400px;}
 .login-badge{width:100px;height:100px;border-radius:14px;background:transparent;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
@@ -1572,6 +1573,18 @@ function logout() {
 
 // Restaurar sessão ao carregar (F5)
 window.addEventListener('load', function() {
+  // Recarregar membros aprovados no USERS (para login e reset de senha funcionarem)
+  try {
+    var membros = JSON.parse(localStorage.getItem('tucic_membros') || '[]');
+    membros.forEach(function(m) {
+      if (m.email && m.senha && m.status === 'ativo') {
+        var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
+        var ini  = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+        USERS[m.email] = { pass: m.senha, name: nome, role: m.perfil === 'admin' ? 'ADMINISTRADOR' : 'MEMBRO', ini: ini, admin: m.perfil === 'admin' };
+      }
+    });
+  } catch(e) {}
+  // Restaurar sessão (F5)
   try {
     var s = localStorage.getItem('tucic_sessao');
     if (!s) return;
