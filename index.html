@@ -1540,6 +1540,17 @@ function doLogin() {
   var email = document.getElementById('lemail').value.trim().toLowerCase();
   var senha = document.getElementById('lsenha').value;
   var err = document.getElementById('err');
+  // Garantir membros do cache local no USERS antes de verificar
+  try {
+    var ml = JSON.parse(localStorage.getItem('tucic_membros') || '[]');
+    ml.forEach(function(m) {
+      if (m.email && m.senha && m.status === 'ativo' && !USERS[m.email]) {
+        var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
+        var ini = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+        USERS[m.email] = { pass: m.senha, name: nome, role: m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO', ini: ini, admin: m.perfil==='admin' };
+      }
+    });
+  } catch(e2) {}
   var u = USERS[email];
   if (u && u.pass === senha) {
     err.style.display = 'none';
@@ -1573,32 +1584,51 @@ function logout() {
 }
 
 // Restaurar sessão ao carregar (F5)
-window.addEventListener('load', async function() {
-  // Carregar membros da nuvem primeiro
-  await carregarMembrosNuvem();
+window.addEventListener('load', function() {
+  // 1. Restaurar sessão IMEDIATAMENTE (não depende da nuvem)
+  function restaurarSessao() {
+    try {
+      var s = localStorage.getItem('tucic_sessao');
+      if (!s) return;
+      var saved = JSON.parse(s);
+      if (!saved || !saved.email) { localStorage.removeItem('tucic_sessao'); return; }
+      // Carregar membros do cache local para USERS antes de verificar
+      try {
+        var membrosLocal = JSON.parse(localStorage.getItem('tucic_membros') || '[]');
+        membrosLocal.forEach(function(m) {
+          if (m.email && m.senha && m.status === 'ativo') {
+            var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
+            var ini = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+            USERS[m.email] = { pass: m.senha, name: nome, role: m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO', ini: ini, admin: m.perfil==='admin' };
+          }
+        });
+      } catch(e2) {}
+      var uReal = USERS[saved.email];
+      if (!uReal) { localStorage.removeItem('tucic_sessao'); return; }
+      aplicarSessao(uReal);
+    } catch(e) { localStorage.removeItem('tucic_sessao'); }
+  }
+  restaurarSessao();
 
-  // Recarregar membros aprovados no USERS (para login e reset de senha funcionarem)
-  try {
-    var membros = JSON.parse(localStorage.getItem('tucic_membros') || '[]');
-    membros.forEach(function(m) {
-      if (m.email && m.senha && m.status === 'ativo') {
-        var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
-        var ini  = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
-        USERS[m.email] = { pass: m.senha, name: nome, role: m.perfil === 'admin' ? 'ADMINISTRADOR' : 'MEMBRO', ini: ini, admin: m.perfil === 'admin' };
-      }
+  // 2. Carregar nuvem em background (não bloqueia nada)
+  setTimeout(function() {
+    carregarMembrosNuvem().then(function() {
+      // Atualizar USERS com membros aprovados vindos da nuvem
+      try {
+        getMembros().forEach(function(m) {
+          if (m.email && m.senha && m.status === 'ativo') {
+            var nome = m.nomeTerreiro || m.nomeRegistro || m.email;
+            var ini = nome.split(' ').slice(0,2).map(function(p){ return p[0]||''; }).join('').toUpperCase();
+            USERS[m.email] = { pass: m.senha, name: nome, role: m.perfil==='admin'?'ADMINISTRADOR':'MEMBRO', ini: ini, admin: m.perfil==='admin' };
+          }
+        });
+      } catch(e) {}
+    }).catch(function(e) {
+      console.warn('Nuvem indisponível, usando cache local:', e);
     });
-  } catch(e) {}
-  // Restaurar sessão (F5)
-  try {
-    var s = localStorage.getItem('tucic_sessao');
-    if (!s) return;
-    var saved = JSON.parse(s);
-    if (!saved || !saved.email) { localStorage.removeItem('tucic_sessao'); return; }
-    var uReal = USERS[saved.email];
-    if (!uReal) { localStorage.removeItem('tucic_sessao'); return; }
-    aplicarSessao(uReal);
-  } catch(e) { localStorage.removeItem('tucic_sessao'); }
+  }, 100);
 });
+
 
 // ==============================
 // NAVEGAÇÃO
