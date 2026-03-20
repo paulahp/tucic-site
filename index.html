@@ -2243,7 +2243,6 @@ function salvarMembro() {
   document.getElementById('membro-modal').classList.remove('open');
   renderMembros();
 }
-function aprovarMembro(idx) { var m=getMembros(); if(!m[idx]) return; m[idx].status='ativo'; setMembros(m); renderMembros(); }
 function toggleStatusMembro(idx,s) { var m=getMembros(); if(!m[idx]) return; m[idx].status=s; setMembros(m); renderMembros(); }
 function excluirMembro(idx) {
   var m=getMembros(); var nome=m[idx]?(m[idx].nomeTerreiro||m[idx].nomeRegistro||m[idx].email):'';
