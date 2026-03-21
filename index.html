@@ -1703,15 +1703,13 @@ function gcalLink(titulo,dataStr,descricao){
   var dt=p[0]+pad(parseInt(p[1]))+pad(parseInt(p[2]));
   var dObj=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);
   var dtEnd=dObj.getFullYear()+String(dObj.getMonth()+1).padStart(2,'0')+String(dObj.getDate()).padStart(2,'0');
-  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(titulo+' — TUCIC')+'&dates='+dt+'/'+dtEnd+'&details='+encodeURIComponent((descricao||'')+'
-TUCIC - Florianópolis/SC')+'&location='+encodeURIComponent('TUCIC - Florianópolis/SC')+'&sf=true&output=xml';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(titulo+' — TUCIC')+'&dates='+dt+'/'+dtEnd+'&details='+encodeURIComponent((descricao||'')+'\nTUCIC - Florianópolis/SC')+'&location='+encodeURIComponent('TUCIC - Florianópolis/SC')+'&sf=true&output=xml';
 }
 function exportarTodosGcal(){
   var linhas=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//TUCIC//PT','CALSCALE:GREGORIAN','X-WR-CALNAME:TUCIC 2026'];
   todosEvs().forEach(function(ev){var p=ev.d.split('-');var dt=p[0]+p[1]+p[2];var dObj=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])+1);var dtEnd=dObj.getFullYear()+String(dObj.getMonth()+1).padStart(2,'0')+String(dObj.getDate()).padStart(2,'0');linhas.push('BEGIN:VEVENT','DTSTART;VALUE=DATE:'+dt,'DTEND;VALUE=DATE:'+dtEnd,'SUMMARY:'+ev.t+' — TUCIC','UID:'+ev.d.replace(/-/g,'')+'-'+ev.t.length+'@tucic','END:VEVENT');});
   linhas.push('END:VCALENDAR');
-  var blob=new Blob([linhas.join('
-')],{type:'text/calendar'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='TUCIC_2026.ics';a.click();URL.revokeObjectURL(url);
+  var blob=new Blob([linhas.join('\r\n')],{type:'text/calendar'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='TUCIC_2026.ics';a.click();URL.revokeObjectURL(url);
 }
 function addEvento(){
   var data=document.getElementById('ev-data').value,titulo=document.getElementById('ev-titulo').value.trim(),tipo=document.getElementById('ev-tipo').value,det=document.getElementById('ev-det').value.trim();
@@ -1791,7 +1789,7 @@ function renderMembros(){
     var pfB=m.perfil==='admin'?'<span class="mem-badge badge-admin">⚙️ Admin</span>':'<span class="mem-badge badge-membro">👤 Membro</span>';
     return '<div class="mem-card"><div class="mem-card-header"><div class="mem-avatar">'+(m.foto?'<img src="'+m.foto+'">':ini)+'</div><div style="flex:1;"><div class="mem-name">'+nome+'</div><div class="mem-email">'+(m.email||'')+'</div><div class="mem-badges">'+stB+pfB+(m.nivel?'<span class="mem-badge badge-membro">'+m.nivel+'</span>':'')+'</div></div></div>'
       +'<div class="mem-detail-grid">'+(m.celular?'<div class="mem-detail-item"><span class="mem-detail-label">Celular</span><span class="mem-detail-value">'+m.celular+'</span></div>':'')+(m.orixas?'<div class="mem-detail-item"><span class="mem-detail-label">Orixás</span><span class="mem-detail-value">'+m.orixas+'</span></div>':'')+(m.guiaFrente?'<div class="mem-detail-item"><span class="mem-detail-label">Guia de Frente</span><span class="mem-detail-value">'+m.guiaFrente+'</span></div>':'')+'</div>'
-      +'<div class="mem-card-actions">'+(m.status==='pendente'?'<button class="btn-sm btn-edit" onclick="aprovarMembro('+ri+')">✅ Aprovar</button>':'')+'<button class="btn-sm btn-edit" onclick="editarMembro('+ri+')">✏️ Editar</button>'+(m.status==='ativo'?'<button class="btn-sm btn-del" onclick="toggleStatusMembro('+ri+','inativo')">❌ Desativar</button>':m.status==='inativo'?'<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+ri+','ativo')">✅ Reativar</button>':'')+'<button class="btn-sm btn-del" onclick="excluirMembro('+ri+')">🗑 Excluir</button></div></div>';
+      +'<div class="mem-card-actions">'+(m.status==='pendente'?'<button class="btn-sm btn-edit" onclick="aprovarMembro('+ri+')">✅ Aprovar</button>':'')+'<button class="btn-sm btn-edit" onclick="editarMembro('+ri+')">✏️ Editar</button>'+(m.status==='ativo'?'<button class="btn-sm btn-del" onclick="toggleStatusMembro('+ri+',\'inativo\')">❌ Desativar</button>':m.status==='inativo'?'<button class="btn-sm btn-edit" onclick="toggleStatusMembro('+ri+',\'ativo\')">✅ Reativar</button>':'')+'<button class="btn-sm btn-del" onclick="excluirMembro('+ri+')">🗑 Excluir</button></div></div>';
   }).join('');
 }
 function renderFichas(){
@@ -1937,12 +1935,68 @@ var uploadZone=document.getElementById('upload-zone');
 if(uploadZone){uploadZone.addEventListener('dragover',function(e){e.preventDefault();this.classList.add('drag');});uploadZone.addEventListener('dragleave',function(){this.classList.remove('drag');});uploadZone.addEventListener('drop',function(e){e.preventDefault();this.classList.remove('drag');var f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')lerPDF(f);});}
 function processarPDF(input){if(input.files[0])lerPDF(input.files[0]);}
 function lerPDF(file){
-  var result=document.getElementById('pdf-result');result.innerHTML='<div class="pdf-processing"><div class="pdf-name">📄 '+file.name+'</div><div style="color:var(--muted);font-size:13px;">⏳ Extraindo texto...</div></div>';
-  if(typeof pdfjsLib==='undefined'){result.innerHTML='<div class="av red"><div class="avb">PDF.js não carregou.</div></div>';return;}
+  var result=document.getElementById('pdf-result');
+  if(!result) return;
+  result.innerHTML='<div style="padding:16px;color:var(--muted);font-size:13px;">Extraindo texto...</div>';
+  if(typeof pdfjsLib==='undefined'){
+    result.innerHTML='<div class="av red"><div class="avb">PDF.js nao carregou.</div></div>';
+    return;
+  }
   var reader=new FileReader();
-  reader.onload=function(e){pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise.then(function(pdf){var promises=[];for(var i=1;i<=pdf.numPages;i++)promises.push(pdf.getPage(i).then(function(p){return p.getTextContent().then(function(tc){return tc.items.map(function(it){return it.str;}).join(' ');});}));Promise.all(promises).then(function(texts){var txt=texts.join('\n\n').trim(),nome=file.name.replace('.pdf','').replace(/_/g,' ');result.innerHTML='<div class="pdf-processing"><div class="pdf-name">✅ '+file.name+'</div><div class="pdf-preview" id="pdf-text">'+txt.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div><div class="pdf-actions"><button class="btn-add-ev" onclick="criarPaginaDoPDF(''+nome+'')">Criar Página</button><button class="btn-sec" onclick="copiarTexto()">Copiar Texto</button></div><div id="pdf-feedback" style="font-size:12px;color:var(--success);margin-top:8px;display:none;font-weight:700;"></div></div>';});}).catch(function(){result.innerHTML='<div class="av red"><div class="avb">Não foi possível ler este PDF.</div></div>';});};
+  reader.onload=function(e){
+    pdfjsLib.getDocument({data:new Uint8Array(e.target.result)}).promise.then(function(pdf){
+      var promises=[];
+      for(var i=1;i<=pdf.numPages;i++){
+        (function(n){
+          promises.push(pdf.getPage(n).then(function(p){
+            return p.getTextContent().then(function(tc){
+              return tc.items.map(function(it){return it.str;}).join(' ');
+            });
+          }));
+        })(i);
+      }
+      return Promise.all(promises);
+    }).then(function(texts){
+      var txt=texts.join('\n\n').trim();
+      var nome=file.name.replace('.pdf','').replace(/_/g,' ');
+      var div=document.createElement('div');
+      div.className='pdf-processing';
+      var nameDiv=document.createElement('div');
+      nameDiv.className='pdf-name';
+      nameDiv.textContent='OK: '+file.name;
+      var preDiv=document.createElement('div');
+      preDiv.className='pdf-preview';
+      preDiv.id='pdf-text';
+      preDiv.textContent=txt;
+      var actDiv=document.createElement('div');
+      actDiv.className='pdf-actions';
+      var btn1=document.createElement('button');
+      btn1.className='btn-add-ev';
+      btn1.textContent='Criar Pagina com este Conteudo';
+      btn1.onclick=function(){criarPaginaDoPDF(nome);};
+      var btn2=document.createElement('button');
+      btn2.className='btn-sec';
+      btn2.style.marginLeft='8px';
+      btn2.textContent='Copiar Texto';
+      btn2.onclick=function(){copiarTexto();};
+      var fb=document.createElement('div');
+      fb.id='pdf-feedback';
+      fb.style.cssText='font-size:12px;color:var(--success);margin-top:8px;display:none;font-weight:700;';
+      actDiv.appendChild(btn1);
+      actDiv.appendChild(btn2);
+      div.appendChild(nameDiv);
+      div.appendChild(preDiv);
+      div.appendChild(actDiv);
+      div.appendChild(fb);
+      result.innerHTML='';
+      result.appendChild(div);
+    }).catch(function(){
+      result.innerHTML='<div class="av red"><div class="avb">Nao foi possivel ler este PDF.</div></div>';
+    });
+  };
   reader.readAsArrayBuffer(file);
 }
+
 function criarPaginaDoPDF(nome){var txt=document.getElementById('pdf-text');if(!txt)return;var conteudo=txt.innerText||txt.textContent;paginas.push({titulo:nome,icone:'📄',conteudo:'<pre style="white-space:pre-wrap;font-family:Inter,sans-serif;font-size:13px;line-height:1.8;">'+conteudo.replace(/</g,'&lt;')+'</pre>',data:new Date().toLocaleDateString('pt-BR')});renderPaginas();var fb=document.getElementById('pdf-feedback');if(fb){fb.textContent='✓ Página "'+nome+'" criada!';fb.style.display='block';}}
 function copiarTexto(){var txt=document.getElementById('pdf-text');if(!txt)return;navigator.clipboard.writeText(txt.innerText||txt.textContent).then(function(){var fb=document.getElementById('pdf-feedback');if(fb){fb.textContent='✓ Copiado!';fb.style.display='block';setTimeout(function(){fb.style.display='none';},2000);}});}
 
